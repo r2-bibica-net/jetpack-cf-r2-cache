@@ -19,14 +19,11 @@ export default {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
 
-        // Tạo canonical URL
         const canonicalUrl = `http://bibica.net/wp-content/uploads/${url.pathname}`;
 
         return new Response(imageResponse.body, {
           headers: {
             'content-type': imageResponse.headers.get('content-type'),
-            'cache-control': 'public, max-age=31536000',
-            'cdn-cache-control': 'max-age=31536000',
             'vary': 'Accept',
             'Link': `<${canonicalUrl}>; rel="canonical"`
           }
