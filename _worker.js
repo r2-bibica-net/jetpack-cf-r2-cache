@@ -1,30 +1,36 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    
-    if (url.hostname === 'i.bibica.net') {
-      const key = url.pathname.substring(1) + url.search;
-      
-      try {
-        // Kiểm tra R2
-        const storedImage = await env.IMAGE_BUCKET.get(key);
-        
-        if (storedImage) {
-          // Cache chỉ khi serve từ R2
-          return new Response(storedImage.body, {
-            headers: storedImage.httpMetadata.headers
-          });
-        }
 
-        // Fetch từ WP với đầy đủ params
-        const wpUrl = new URL(request.url);
-        wpUrl.hostname = 'i0.wp.com';
-        wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-        wpUrl.search = url.search;
-        
+    // Chỉ xử lý các request đến i.bibica.net
+    if (url.hostname === 'i.bibica.net') {
+      const imageKey = url.pathname + url.search; // Ví dụ: /2024/07/example.jpg?w=1024
+
+      // Kiểm tra xem ảnh đã tồn tại trong R2 chưa
+      let object = await env.IMAGE_BUCKET.get(imageKey);
+
+      // Nếu ảnh đã tồn tại trong R2, trả về ảnh từ R2
+      if (object) {
+        return new Response(object.body, {
+          headers: {
+            'content-type': object.httpMetadata.contentType, // Giữ nguyên content-type
+            'Cache-Control': 'public, max-age=31536000' // Cache trong 1 năm
+          }
+        });
+      }
+
+      // Nếu ảnh chưa tồn tại trong R2, lấy từ i0.wp.com và lưu vào R2
+      const wpUrl = new URL(request.url);
+      wpUrl.hostname = 'i0.wp.com';
+      wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
+      wpUrl.search = url.search;
+
+      try {
+        // Bypass cache của Cloudflare CDN bằng cách thêm header Cache-Control: no-cache
         const imageResponse = await fetch(wpUrl, {
           headers: {
-            'Accept': request.headers.get('Accept') || '*/*'
+            'Accept': request.headers.get('Accept') || '*/*',
+            'Cache-Control': 'no-cache' // Bypass cache của Cloudflare CDN
           }
         });
 
@@ -32,32 +38,27 @@ export default {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
 
-        // Set headers với no-store cho response từ i0.wp.com
-        const headers = new Headers(imageResponse.headers);
-        headers.set('Cache-Control', 'no-store');
-        
-        const imageBlob = await imageResponse.blob();
-        
-        // Lưu vào R2 với cache-control
-        await env.IMAGE_BUCKET.put(key, imageBlob, {
+        // Lưu ảnh vào R2
+        await env.IMAGE_BUCKET.put(imageKey, imageResponse.body, {
           httpMetadata: {
-            headers: {
-              ...Object.fromEntries(headers),
-              'Cache-Control': 'public, max-age=31536000' // Cache khi serve từ R2
-            }
+            contentType: imageResponse.headers.get('content-type') // Lưu content-type
           }
         });
 
-        return new Response(imageBlob, {
-          headers: headers  // no-store cho response từ i0.wp.com
+        // Trả về ảnh từ i0.wp.com (lần đầu tiên)
+        return new Response(imageResponse.body, {
+          headers: {
+            'content-type': imageResponse.headers.get('content-type'),
+            'Cache-Control': 'public, max-age=31536000' // Cache trong 1 năm
+          }
         });
-
       } catch (error) {
         console.error('Error:', error);
-        return new Response('Failed to process image', { status: 500 });
+        return new Response('Failed to fetch image', { status: 500 });
       }
     }
 
+    // Nếu không phải i.bibica.net, trả về 404
     return new Response('Not Found', { status: 404 });
   }
 };
