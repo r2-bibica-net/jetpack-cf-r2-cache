@@ -3,21 +3,9 @@ export default {
     const url = new URL(request.url);
     
     if (url.hostname === 'images.bibica.net') {
-      // Kiểm tra browser có hỗ trợ WebP không
-      const acceptHeader = request.headers.get('Accept') || '';
-      const supportsWebP = acceptHeader.includes('image/webp');
-      
-      // Tạo cache key dựa trên URL và WebP support
-      const cacheKey = new Request(request.url, {
-        headers: {
-          'Accept': acceptHeader,
-          'WebP-Support': supportsWebP ? '1' : '0'
-        }
-      });
-
       // Check cache
       const cache = caches.default;
-      const cachedResponse = await cache.match(cacheKey);
+      const cachedResponse = await cache.match(request);
       
       if (cachedResponse) {
         return cachedResponse;
@@ -28,11 +16,9 @@ export default {
       wpUrl.hostname = 'i0.wp.com';
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       
-      // Giữ nguyên các query params hiện có
+      // Giữ nguyên các query params hiện có và thêm format webp
       wpUrl.search = url.search;
-      
-      // Thêm param để yêu cầu WebP nếu browser hỗ trợ
-      if (supportsWebP) {
+      if (!wpUrl.searchParams.has('format')) {
         wpUrl.searchParams.append('format', 'webp');
       }
 
@@ -42,23 +28,17 @@ export default {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
 
-        // Lấy content-type từ i0.wp.com response
-        const contentType = imageResponse.headers.get('content-type');
-        
-        // Tạo response mới với đầy đủ headers
+        // Tạo response mới với headers cơ bản
         const response = new Response(imageResponse.body, {
           headers: {
-            'content-type': contentType,
+            'content-type': imageResponse.headers.get('content-type'),
             'cache-control': 'public, max-age=31536000',
-            'cdn-cache-control': 'max-age=31536000',
-            'vary': 'Accept', // Quan trọng để cache riêng cho WebP và non-WebP
-            'content-encoding': imageResponse.headers.get('content-encoding'),
-            'accept-ranges': 'bytes'
+            'cdn-cache-control': 'max-age=31536000'
           }
         });
 
         // Cache response
-        await cache.put(cacheKey, response.clone());
+        await cache.put(request, response.clone());
         
         return response;
       } catch (error) {
