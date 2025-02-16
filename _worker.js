@@ -19,13 +19,7 @@ export default {
       wpUrl.search = url.search; // giữ nguyên query params (?w=450)
 
       try {
-        // Thêm Accept header để nhận webp
-        const imageResponse = await fetch(wpUrl, {
-          headers: {
-            'Accept': request.headers.get('Accept') || '*/*'
-          }
-        });
-        
+        const imageResponse = await fetch(wpUrl);
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
@@ -35,8 +29,7 @@ export default {
           headers: {
             'content-type': imageResponse.headers.get('content-type'),
             'cache-control': 'public, max-age=31536000',
-            'cdn-cache-control': 'max-age=31536000',
-            'vary': 'Accept'  // Thêm vary header để cache theo Accept
+            'cdn-cache-control': 'max-age=31536000'
           }
         });
 
