@@ -7,16 +7,19 @@ export default {
       const key = url.pathname.substring(1) + url.search;
       
       try {
-        // Kiểm tra R2
+        // Kiểm tra R2 trước
         const storedImage = await env.IMAGE_BUCKET.get(key);
         
+        // Nếu có ảnh trong R2, trả về ngay lập tức
         if (storedImage) {
+          console.log('Serving from R2:', key);
           return new Response(storedImage.body, {
             headers: storedImage.httpMetadata.headers
           });
         }
 
-        // Fetch từ WP với đầy đủ params và force bypass cache
+        // Chỉ fetch từ i0.wp.com khi không có ảnh trong R2
+        console.log('Fetching from origin:', key);
         const wpUrl = new URL(request.url);
         wpUrl.hostname = 'i0.wp.com';
         wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
@@ -31,9 +34,7 @@ export default {
             'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
             'Pragma': 'no-cache',
             'Expires': '0',
-            // Force Cloudflare to không cache
             'X-Cloudflare-No-Cache': '1',
-            // Thêm custom cache key
             'Cf-Cache-Key': Date.now().toString()
           }
         });
