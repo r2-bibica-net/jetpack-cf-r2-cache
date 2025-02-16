@@ -11,16 +11,15 @@ export default {
         return cachedResponse;
       }
 
-      // Tạo URL cho i0.wp.com
-      const wpUrl = new URL(request.url);
-      wpUrl.hostname = 'i0.wp.com';
-      wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
+      // Tạo URL cho i0.wp.com - CHÚ Ý: không thêm /wp-content/uploads vào pathname
+      const wpUrl = new URL('https://i0.wp.com/bibica.net/wp-content/uploads' + url.pathname);
       
       // Giữ nguyên các query params hiện có và thêm format webp
-      wpUrl.search = url.search;
-      if (!wpUrl.searchParams.has('format')) {
-        wpUrl.searchParams.append('format', 'webp');
+      const searchParams = new URLSearchParams(url.search);
+      if (!searchParams.has('format')) {
+        searchParams.append('format', 'webp');
       }
+      wpUrl.search = searchParams.toString();
 
       try {
         const imageResponse = await fetch(wpUrl);
