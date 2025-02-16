@@ -1,58 +1,65 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-
-    // Chỉ xử lý các request đến i.bibica.net
+    
     if (url.hostname === 'i.bibica.net') {
-      const imageKey = url.pathname; // Ví dụ: /example.jpg
+      const r2Key = url.pathname.substring(1);
 
-      // Kiểm tra xem ảnh đã tồn tại trong R2 chưa
-      let object = await env.IMAGE_BUCKET.get(imageKey);
+      try {
+        // Kiểm tra ảnh trong R2
+        const r2Object = await env.IMAGES.get(r2Key);
+        
+        if (r2Object) {
+          // Trả về với content-type gốc đã lưu
+          return new Response(r2Object.body, {
+            headers: {
+              'content-type': r2Object.httpMetadata.contentType,  // Không cần fallback
+              'vary': 'Accept',
+              'etag': r2Object.httpEtag
+            }
+          });
+        }
 
-      // Nếu ảnh chưa tồn tại, lấy từ i0.wp.com và lưu vào R2
-      if (!object) {
+        // Fetch từ i0.wp.com với Accept header
         const wpUrl = new URL(request.url);
         wpUrl.hostname = 'i0.wp.com';
         wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
         wpUrl.search = url.search;
 
-        try {
-          // Lấy ảnh từ i0.wp.com
-          const imageResponse = await fetch(wpUrl, {
-            headers: {
-              'Accept': request.headers.get('Accept') || '*/*'
-            }
-          });
-
-          if (!imageResponse.ok) {
-            throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+        const imageResponse = await fetch(wpUrl, {
+          headers: {
+            'Accept': request.headers.get('Accept') || '*/*'
           }
-
-          // Lưu ảnh vào R2
-          await env.IMAGE_BUCKET.put(imageKey, imageResponse.body, {
-            httpMetadata: {
-              contentType: imageResponse.headers.get('content-type')
-            }
-          });
-
-          // Lấy lại ảnh từ R2
-          object = await env.IMAGE_BUCKET.get(imageKey);
-        } catch (error) {
-          console.error('Error:', error);
-          return new Response('Failed to fetch image', { status: 500 });
+        });
+        
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
+
+        const contentType = imageResponse.headers.get('content-type');
+        const imageBody = await imageResponse.arrayBuffer();
+        
+        // Lưu vào R2 với content-type gốc
+        await env.IMAGES.put(r2Key, imageBody, {
+          httpMetadata: {
+            contentType: contentType  // Lưu đúng content-type (có thể là image/webp)
+          }
+        });
+        
+        return new Response(imageBody, {
+          headers: {
+            'content-type': contentType,
+            'vary': 'Accept'
+          }
+        });
+
+      } catch (error) {
+        console.error('Error:', error);
+        const wpUrl = new URL('https://i0.wp.com/bibica.net/wp-content/uploads' + url.pathname + url.search);
+        return fetch(new Request(wpUrl, request));
       }
-
-      // Trả về ảnh từ R2
-      return new Response(object.body, {
-        headers: {
-          'content-type': object.httpMetadata.contentType,
-          'Cache-Control': 'public, max-age=31536000' // Cache trong 1 năm
-        }
-      });
     }
 
-    // Nếu không phải i.bibica.net, trả về 404
     return new Response('Not Found', { status: 404 });
   }
 };
