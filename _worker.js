@@ -3,25 +3,20 @@ export default {
     const url = new URL(request.url);
     
     if (url.hostname === 'i.bibica.net') {
-      // Tạo key cho file trong R2 bucket
-      const key = url.pathname.substring(1); // Bỏ dấu / ở đầu
+      // Tạo unique key bao gồm cả query params để lưu các phiên bản khác nhau của ảnh
+      const key = url.pathname.substring(1) + url.search;
       
       try {
-        // Kiểm tra xem ảnh đã có trong R2 chưa
+        // Kiểm tra R2
         const storedImage = await env.MY_BUCKET.get(key);
         
         if (storedImage) {
-          // Nếu có rồi thì trả về trực tiếp từ R2
           return new Response(storedImage.body, {
-            headers: {
-              'content-type': storedImage.httpMetadata.contentType,
-              'cache-control': 'public, max-age=31536000',
-              'Link': `<http://bibica.net/wp-content/uploads${url.pathname}>; rel="canonical"`
-            }
+            headers: storedImage.httpMetadata.headers
           });
         }
 
-        // Nếu chưa có thì fetch từ WordPress
+        // Fetch từ WP với đầy đủ params
         const wpUrl = new URL(request.url);
         wpUrl.hostname = 'i0.wp.com';
         wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
@@ -37,23 +32,22 @@ export default {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
 
-        // Convert response sang blob để lưu vào R2
+        // Lưu toàn bộ headers để giữ thông tin về format ảnh
+        const headers = new Headers(imageResponse.headers);
+        headers.set('Cache-Control', 'public, max-age=31536000');
+        headers.set('Link', `<http://bibica.net/wp-content/uploads${url.pathname}>; rel="canonical"`);
+
         const imageBlob = await imageResponse.blob();
         
-        // Lưu vào R2 bucket
+        // Lưu vào R2 với đầy đủ metadata
         await env.MY_BUCKET.put(key, imageBlob, {
           httpMetadata: {
-            contentType: imageResponse.headers.get('content-type')
+            headers: Object.fromEntries(headers)
           }
         });
 
-        // Trả về ảnh cho request hiện tại
         return new Response(imageBlob, {
-          headers: {
-            'content-type': imageResponse.headers.get('content-type'),
-            'cache-control': 'public, max-age=31536000',
-            'Link': `<http://bibica.net/wp-content/uploads${url.pathname}>; rel="canonical"`
-          }
+          headers: headers
         });
 
       } catch (error) {
