@@ -3,24 +3,29 @@ export default {
     const url = new URL(request.url);
     
     if (url.hostname === 'i.bibica.net') {
-      const r2Key = url.pathname.substring(1);
+      const acceptHeader = request.headers.get('Accept') || '';
+      const supportsWebP = acceptHeader.includes('image/webp');
+      
+      const imageKey = supportsWebP ? `webp${url.pathname}` : `original${url.pathname}`;
+      const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
 
       try {
         // Kiểm tra ảnh trong R2
-        const r2Object = await env.IMAGES.get(r2Key);
+        const r2Object = await env.IMAGE_BUCKET.get(imageKey);
         
         if (r2Object) {
-          // Trả về với content-type gốc đã lưu
           return new Response(r2Object.body, {
             headers: {
-              'content-type': r2Object.httpMetadata.contentType,  // Không cần fallback
+              'content-type': r2Object.httpMetadata.contentType,
               'vary': 'Accept',
-              'etag': r2Object.httpEtag
+              'etag': r2Object.httpEtag,
+              'Cache-Control': 'public, max-age=31536000, immutable',
+              'Link': `<${canonicalUrl}>; rel="canonical"`
             }
           });
         }
 
-        // Fetch từ i0.wp.com với Accept header
+        // Fetch từ i0.wp.com
         const wpUrl = new URL(request.url);
         wpUrl.hostname = 'i0.wp.com';
         wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
@@ -28,7 +33,7 @@ export default {
 
         const imageResponse = await fetch(wpUrl, {
           headers: {
-            'Accept': request.headers.get('Accept') || '*/*'
+            'Accept': supportsWebP ? 'image/webp,*/*' : '*/*'
           }
         });
         
@@ -36,20 +41,19 @@ export default {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
 
-        const contentType = imageResponse.headers.get('content-type');
-        const imageBody = await imageResponse.arrayBuffer();
-        
-        // Lưu vào R2 với content-type gốc
-        await env.IMAGES.put(r2Key, imageBody, {
+        // Lưu vào R2
+        await env.IMAGE_BUCKET.put(imageKey, imageResponse.body, {
           httpMetadata: {
-            contentType: contentType  // Lưu đúng content-type (có thể là image/webp)
+            contentType: imageResponse.headers.get('content-type')
           }
         });
         
-        return new Response(imageBody, {
+        return new Response(imageResponse.body, {
           headers: {
-            'content-type': contentType,
-            'vary': 'Accept'
+            'content-type': imageResponse.headers.get('content-type'),
+            'vary': 'Accept',
+            'Cache-Control': 'public, max-age=31536000, immutable',
+            'Link': `<${canonicalUrl}>; rel="canonical"`
           }
         });
 
