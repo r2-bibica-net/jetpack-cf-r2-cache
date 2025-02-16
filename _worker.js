@@ -2,21 +2,39 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     
-    // Chỉ xử lý các request tới i.bibica.net
-    if (url.hostname === 'i.bibica.net') {
-      // Check cache trước
+    if (url.hostname === 'images.bibica.net') {
+      // Kiểm tra browser có hỗ trợ WebP không
+      const acceptHeader = request.headers.get('Accept') || '';
+      const supportsWebP = acceptHeader.includes('image/webp');
+      
+      // Tạo cache key dựa trên URL và WebP support
+      const cacheKey = new Request(request.url, {
+        headers: {
+          'Accept': acceptHeader,
+          'WebP-Support': supportsWebP ? '1' : '0'
+        }
+      });
+
+      // Check cache
       const cache = caches.default;
-      const cachedResponse = await cache.match(request);
+      const cachedResponse = await cache.match(cacheKey);
       
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      // Nếu chưa có trong cache, tạo request tới i0.wp.com
+      // Tạo URL cho i0.wp.com
       const wpUrl = new URL(request.url);
       wpUrl.hostname = 'i0.wp.com';
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-      wpUrl.search = url.search; // giữ nguyên query params (?w=450)
+      
+      // Giữ nguyên các query params hiện có
+      wpUrl.search = url.search;
+      
+      // Thêm param để yêu cầu WebP nếu browser hỗ trợ
+      if (supportsWebP) {
+        wpUrl.searchParams.append('format', 'webp');
+      }
 
       try {
         const imageResponse = await fetch(wpUrl);
@@ -24,27 +42,31 @@ export default {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
 
-        // Tạo response mới với cache headers
+        // Lấy content-type từ i0.wp.com response
+        const contentType = imageResponse.headers.get('content-type');
+        
+        // Tạo response mới với đầy đủ headers
         const response = new Response(imageResponse.body, {
           headers: {
-            'content-type': imageResponse.headers.get('content-type'),
+            'content-type': contentType,
             'cache-control': 'public, max-age=31536000',
-            'cdn-cache-control': 'max-age=31536000'
+            'cdn-cache-control': 'max-age=31536000',
+            'vary': 'Accept', // Quan trọng để cache riêng cho WebP và non-WebP
+            'content-encoding': imageResponse.headers.get('content-encoding'),
+            'accept-ranges': 'bytes'
           }
         });
 
-        // Lưu vào cache
-        await cache.put(request, response.clone());
+        // Cache response
+        await cache.put(cacheKey, response.clone());
         
         return response;
       } catch (error) {
         console.error('Error:', error);
-        // Nếu có lỗi, fallback về i0.wp.com
         return fetch(new Request(wpUrl, request));
       }
     }
 
-    // Xử lý các request không phải images.bibica.net
     return new Response('Not Found', { status: 404 });
   }
 };
