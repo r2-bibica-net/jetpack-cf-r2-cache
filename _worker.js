@@ -16,7 +16,7 @@ export default {
           });
         }
 
-        // Fetch từ WP với đầy đủ params và bypass cache
+        // Fetch từ WP với đầy đủ params và strict no-cache
         const wpUrl = new URL(request.url);
         wpUrl.hostname = 'i0.wp.com';
         wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
@@ -25,11 +25,9 @@ export default {
         const imageResponse = await fetch(wpUrl, {
           headers: {
             'Accept': request.headers.get('Accept') || '*/*',
-            'Cache-Control': 'no-store'  // Bypass Cloudflare cache
-          },
-          cf: {
-            cacheEverything: false,
-            cacheTtl: 0
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
           }
         });
 
