@@ -3,20 +3,20 @@ export default {
     const url = new URL(request.url);
     
     if (url.hostname === 'i.bibica.net') {
-      // Tạo unique key bao gồm cả query params để lưu các phiên bản khác nhau của ảnh
       const key = url.pathname.substring(1) + url.search;
       
       try {
-        // Kiểm tra R2
-        const storedImage = await env.MY_BUCKET.get(key);
+        // Check R2 trước
+        const storedImage = await env.IMAGE_BUCKET.get(key);
         
         if (storedImage) {
+          // Nếu có trong R2, trả về và cho phép cache
           return new Response(storedImage.body, {
             headers: storedImage.httpMetadata.headers
           });
         }
 
-        // Fetch từ WP với đầy đủ params
+        // Fetch từ i0.wp.com
         const wpUrl = new URL(request.url);
         wpUrl.hostname = 'i0.wp.com';
         wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
@@ -32,17 +32,20 @@ export default {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
 
-        // Lưu toàn bộ headers để giữ thông tin về format ảnh
+        // Set up headers - không cache khi trả về từ i0.wp.com
         const headers = new Headers(imageResponse.headers);
-        headers.set('Cache-Control', 'public, max-age=31536000');
+        headers.set('Cache-Control', 'no-store'); // Không cache response từ i0.wp.com
         headers.set('Link', `<http://bibica.net/wp-content/uploads${url.pathname}>; rel="canonical"`);
 
         const imageBlob = await imageResponse.blob();
         
-        // Lưu vào R2 với đầy đủ metadata
-        await env.MY_BUCKET.put(key, imageBlob, {
+        // Vẫn lưu vào R2
+        await env.IMAGE_BUCKET.put(key, imageBlob, {
           httpMetadata: {
-            headers: Object.fromEntries(headers)
+            headers: {
+              ...Object.fromEntries(headers),
+              'Cache-Control': 'public, max-age=31536000' // R2 version sẽ được cache
+            }
           }
         });
 
