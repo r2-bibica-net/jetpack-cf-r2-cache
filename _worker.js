@@ -16,18 +16,25 @@ export default {
           });
         }
 
-        // Fetch từ WP với đầy đủ params và strict no-cache
+        // Fetch từ WP với đầy đủ params và force bypass cache
         const wpUrl = new URL(request.url);
         wpUrl.hostname = 'i0.wp.com';
         wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
         wpUrl.search = url.search;
+        
+        // Thêm timestamp vào URL để force unique cache key
+        wpUrl.searchParams.append('_t', Date.now());
         
         const imageResponse = await fetch(wpUrl, {
           headers: {
             'Accept': request.headers.get('Accept') || '*/*',
             'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
             'Pragma': 'no-cache',
-            'Expires': '0'
+            'Expires': '0',
+            // Force Cloudflare to không cache
+            'X-Cloudflare-No-Cache': '1',
+            // Thêm custom cache key
+            'Cf-Cache-Key': Date.now().toString()
           }
         });
 
