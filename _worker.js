@@ -11,18 +11,18 @@ export default {
         return cachedResponse;
       }
 
-      // Tạo URL cho i0.wp.com - CHÚ Ý: không thêm /wp-content/uploads vào pathname
+      // Tạo URL cho i0.wp.com
       const wpUrl = new URL('https://i0.wp.com/bibica.net/wp-content/uploads' + url.pathname);
-      
-      // Giữ nguyên các query params hiện có và thêm format webp
-      const searchParams = new URLSearchParams(url.search);
-      if (!searchParams.has('format')) {
-        searchParams.append('format', 'webp');
-      }
-      wpUrl.search = searchParams.toString();
+      wpUrl.search = url.search; // giữ nguyên query params (ví dụ ?w=450)
 
       try {
-        const imageResponse = await fetch(wpUrl);
+        // Forward luôn Accept header từ request gốc
+        const imageResponse = await fetch(wpUrl, {
+          headers: {
+            'Accept': request.headers.get('Accept') || '*/*'
+          }
+        });
+        
         if (!imageResponse.ok) {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
@@ -32,7 +32,8 @@ export default {
           headers: {
             'content-type': imageResponse.headers.get('content-type'),
             'cache-control': 'public, max-age=31536000',
-            'cdn-cache-control': 'max-age=31536000'
+            'cdn-cache-control': 'max-age=31536000',
+            'vary': 'Accept'  // Quan trọng để cache phù hợp với Accept header
           }
         });
 
