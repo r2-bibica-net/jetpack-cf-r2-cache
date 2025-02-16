@@ -8,17 +8,31 @@ export default {
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
 
-      const response = await fetch(new Request(wpUrl, request));
-      const canonicalUrl = `http://bibica.net/wp-content/uploads/${url.pathname}`;
-
-      // Tạo response mới với headers tùy chỉnh
-      return new Response(response.body, {
-        headers: {
-          'content-type': response.headers.get('content-type'),
-          'vary': 'Accept',
-          'Link': `<${canonicalUrl}>; rel="canonical"`
+      try {
+        const imageResponse = await fetch(wpUrl, {
+          headers: {
+            'Accept': request.headers.get('Accept') || '*/*'
+          }
+        });
+        
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
-      });
+
+        const canonicalUrl = `http://bibica.net/wp-content/uploads/${url.pathname}`;
+
+        return new Response(imageResponse.body, {
+          headers: {
+            'content-type': imageResponse.headers.get('content-type'),
+            'vary': 'Accept',
+            'Link': `<${canonicalUrl}>; rel="canonical"`,
+            'Cache-Control': 'public, max-age=31536000',
+          }
+        });
+      } catch (error) {
+        console.error('Error:', error);
+        return fetch(new Request(wpUrl, request));
+      }
     }
 
     return new Response('Not Found', { status: 404 });
