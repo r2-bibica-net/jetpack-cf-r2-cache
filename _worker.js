@@ -19,7 +19,7 @@ export default {
           throw new Error(`Failed to fetch image: ${imageResponse.status}`);
         }
 
-        const canonicalUrl = `http://bibica.net/wp-content/uploads/${url.pathname}`;
+        const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
 
         return new Response(imageResponse.body, {
           headers: {
