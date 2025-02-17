@@ -27,6 +27,8 @@ export default {
             'vary': 'Accept',
             'Link': `<${canonicalUrl}>; rel="canonical"`,
             'Cache-Control': 'public, max-age=31536000',
+            'CDN-Cache-Control': 'public, max-age=31536000',
+            'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000',
           }
         });
       } catch (error) {
