@@ -12,7 +12,6 @@ export default {
     let cachedImage = await env.IMAGE_BUCKET.get(r2Key);
     
     if (!cachedImage) {
-      // Image not in R2, fetch from WordPress and save to R2
       const wpUrl = new URL(request.url);
       wpUrl.hostname = 'i0.wp.com';
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
@@ -26,7 +25,6 @@ export default {
         }
         const imageData = await imageResponse.arrayBuffer();
         
-        // Store in R2
         await env.IMAGE_BUCKET.put(r2Key, imageData, {
           httpMetadata: {
             contentType: imageResponse.headers.get('content-type'),
@@ -46,12 +44,11 @@ export default {
       }
     }
 
-    // Create initial response
     const headers = new Headers({
       'content-type': cachedImage.httpMetadata.contentType,
       'vary': 'Accept',
       'Cache-Control': 'public, max-age=31536000, immutable',
-      'CDN-Cache-Control': 'public, max-age=31536000, immutable',
+      'CDN-Cache-Control': 'public, max-age=31536000, immutable', 
       'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable',
       'X-Source': 'Cloudflare R2 with Jetpack'
     });
@@ -59,11 +56,15 @@ export default {
     const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
     headers.set('Link', `<${canonicalUrl}>; rel="canonical"`);
 
-    // Send a background fetch to the same URL to prime the cache
-    fetch(request.url, {
-      headers: request.headers
-    }).catch(() => {}); // Ignore any errors from the background fetch
+    // Gửi response đầu tiên (sẽ là MISS)
+    response = new Response(cachedImage.body, { headers });
 
-    return new Response(cachedImage.body, { headers });
+    // Ngay lập tức tạo request thứ 2 (sẽ là HIT vì response đầu đã được cache)
+    fetch(request.url, {
+      method: request.method,
+      headers: request.headers
+    }).catch(() => {});  // Bỏ qua lỗi nếu có
+
+    return response;
   }
 };
