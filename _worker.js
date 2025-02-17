@@ -56,9 +56,6 @@ export default {
     const headers = {
       'content-type': cachedImage.httpMetadata.contentType,
       'Cache-Control': 'public, max-age=31536000, immutable',
-      'Expires': new Date(Date.now() + 31536000 * 1000).toUTCString(),
-      'CDN-Cache-Control': 'public, max-age=31536000, immutable',
-      'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable',
       'X-Source': 'Cloudflare R2 with Jetpack'
     };
 
