@@ -64,10 +64,10 @@ export default {
     const headers = {
       'content-type': cachedImage.httpMetadata.contentType,
       'vary': 'Accept',
-      'Cache-Control': 'public, max-age=31536000, immutable',
-      'CDN-Cache-Control': 'public, max-age=31536000, immutable',
-      'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable',
-      'X-Source': 'Cloudflare R2 with Jetpack',
+      'Cache-Control': 'public, max-age=31536000',
+      'CDN-Cache-Control': 'public, max-age=31536000',
+      'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000',
+      'X-Source': 'Cloudflare R2 with Jetpack'
     };
 
     // Always return from R2
