@@ -11,19 +11,18 @@ export default {
       const imageResponse = await fetch(wpUrl, {
         headers: { 'Accept': request.headers.get('Accept') || '*/*' }
       });
-      const canonicalUrl = http://bibica.net/wp-content/uploads${url.pathname};
+      const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
 
       return new Response(imageResponse.body, {
         headers: {
           'content-type': imageResponse.headers.get('content-type'),
           'vary': 'Accept',
-          'Link': <${canonicalUrl}>; rel="canonical",
+          'Link': `<${canonicalUrl}>; rel="canonical"`,
           'Cache-Control': 'public, max-age=31536000, immutable',
-          'CDN-Cache-Control': 'public, max-age=31536000, immutable',
-          'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable',
+          'X-Served-By': 'Cloudflare & Jetpack'
         }
       });
     }
-    return new Response('Request not supported: ${url.hostname} does not match any rules.', { status: 404 });
+    return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { status: 404 });
   }
 };
