@@ -12,6 +12,7 @@ export default {
     
     // Try to get image from R2 first
     let cachedImage = await env.IMAGE_BUCKET.get(r2Key);
+    let cacheStatus = 'MISS';
     
     if (!cachedImage) {
       // Image not in R2, fetch from WordPress and save to R2
@@ -46,6 +47,8 @@ export default {
           status: 500
         });
       }
+    } else {
+      cacheStatus = 'HIT';
     }
 
     // Always return from R2
@@ -57,6 +60,7 @@ export default {
         'CDN-Cache-Control': 'public, max-age=31536000',
         'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000',
         'X-Source': 'Cloudflare R2 with Jetpack',
+        'cf-cache-status': cacheStatus
       }
     });
 
