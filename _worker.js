@@ -9,14 +9,14 @@ export default {
     }
 
     const r2Key = url.pathname + url.search;
-    console.log('Checking R2 for key:', r2Key);
+    #console.log('Checking R2 for key:', r2Key);
     
     // Try to get image from R2 first
     let cachedImage = await env.IMAGE_BUCKET.get(r2Key);
-    console.log('R2 cache check result:', cachedImage ? 'Found in cache' : 'Not in cache');
+    #console.log('R2 cache check result:', cachedImage ? 'Found in cache' : 'Not in cache');
     
     if (!cachedImage) {
-      console.log('Cache miss - fetching from WordPress');
+      #console.log('Cache miss - fetching from WordPress');
       // Image not in R2, fetch from WordPress and save to R2
       const wpUrl = new URL(request.url);
       wpUrl.hostname = 'i0.wp.com';
@@ -33,10 +33,10 @@ export default {
 
         // Get the image data as an array buffer
         const imageData = await imageResponse.arrayBuffer();
-        console.log('Got image from WordPress, size:', imageData.byteLength);
+        #console.log('Got image from WordPress, size:', imageData.byteLength);
         
         // Store in R2
-        console.log('Storing in R2...');
+        #console.log('Storing in R2...');
         await env.IMAGE_BUCKET.put(r2Key, imageData, {
           httpMetadata: {
             contentType: imageResponse.headers.get('content-type'),
@@ -44,7 +44,7 @@ export default {
         });
         
         // Get the newly stored image from R2
-        console.log('Retrieving stored image from R2');
+        #console.log('Retrieving stored image from R2');
         cachedImage = await env.IMAGE_BUCKET.get(r2Key);
         
         if (!cachedImage) {
@@ -57,7 +57,7 @@ export default {
         });
       }
     } else {
-      console.log('Cache hit - serving from R2');
+      #console.log('Cache hit - serving from R2');
     }
 
     // Add debug headers
@@ -69,7 +69,7 @@ export default {
       'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000',
       'X-Source': 'Cloudflare R2 with Jetpack',
       'X-Cache-Debug': cachedImage ? 'R2-HIT' : 'R2-MISS',
-      'X-R2-Key': r2Key
+   #   'X-R2-Key': r2Key
     };
 
     // Always return from R2
