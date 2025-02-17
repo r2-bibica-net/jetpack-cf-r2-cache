@@ -64,11 +64,11 @@ export default {
     const headers = {
       'content-type': cachedImage.httpMetadata.contentType,
       'vary': 'Accept',
-      'Cache-Control': 'public, max-age=31536000',
-      'CDN-Cache-Control': 'public, max-age=31536000',
-      'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      'CDN-Cache-Control': 'public, max-age=31536000, immutable',
+      'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable',
       'X-Source': 'Cloudflare R2 with Jetpack',
-      'X-Cache-Debug': cachedImage ? 'R2-HIT' : 'R2-MISS',
+   #   'X-Cache-Debug': cachedImage ? 'R2-HIT' : 'R2-MISS',
    #   'X-R2-Key': r2Key
     };
 
