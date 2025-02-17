@@ -9,9 +9,15 @@ export default {
     }
 
     const r2Key = url.pathname + url.search;
+    #console.log('Checking R2 for key:', r2Key);
+    
+    // Try to get image from R2 first
     let cachedImage = await env.IMAGE_BUCKET.get(r2Key);
+    #console.log('R2 cache check result:', cachedImage ? 'Found in cache' : 'Not in cache');
     
     if (!cachedImage) {
+      #console.log('Cache miss - fetching from WordPress');
+      // Image not in R2, fetch from WordPress and save to R2
       const wpUrl = new URL(request.url);
       wpUrl.hostname = 'i0.wp.com';
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
@@ -20,17 +26,25 @@ export default {
         const imageResponse = await fetch(wpUrl, {
           headers: { 'Accept': request.headers.get('Accept') || '*/*' }
         });
+
         if (!imageResponse.ok) {
           throw new Error(`WordPress image fetch failed: ${imageResponse.status}`);
         }
+
+        // Get the image data as an array buffer
         const imageData = await imageResponse.arrayBuffer();
+        #console.log('Got image from WordPress, size:', imageData.byteLength);
         
+        // Store in R2
+        #console.log('Storing in R2...');
         await env.IMAGE_BUCKET.put(r2Key, imageData, {
           httpMetadata: {
             contentType: imageResponse.headers.get('content-type'),
           }
         });
         
+        // Get the newly stored image from R2
+        #console.log('Retrieving stored image from R2');
         cachedImage = await env.IMAGE_BUCKET.get(r2Key);
         
         if (!cachedImage) {
@@ -42,29 +56,29 @@ export default {
           status: 500
         });
       }
+    } else {
+      #console.log('Cache hit - serving from R2');
     }
 
-    const headers = new Headers({
+    // Add debug headers
+    const headers = {
       'content-type': cachedImage.httpMetadata.contentType,
       'vary': 'Accept',
       'Cache-Control': 'public, max-age=31536000, immutable',
-      'CDN-Cache-Control': 'public, max-age=31536000, immutable', 
+      'CDN-Cache-Control': 'public, max-age=31536000, immutable',
       'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000, immutable',
-      'X-Source': 'Cloudflare R2 with Jetpack'
-    });
+      'X-Source': 'Cloudflare R2 with Jetpack',
+   #   'X-Cache-Debug': cachedImage ? 'R2-HIT' : 'R2-MISS',
+   #   'X-R2-Key': r2Key
+    };
 
+    // Always return from R2
+    const response = new Response(cachedImage.body, { headers });
+
+    // Add canonical URL header
     const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
-    headers.set('Link', `<${canonicalUrl}>; rel="canonical"`);
-
-    // Gửi response đầu tiên (sẽ là MISS)
-    response = new Response(cachedImage.body, { headers });
-
-    // Ngay lập tức tạo request thứ 2 (sẽ là HIT vì response đầu đã được cache)
-    fetch(request.url, {
-      method: request.method,
-      headers: request.headers
-    }).catch(() => {});  // Bỏ qua lỗi nếu có
-
+    response.headers.set('Link', `<${canonicalUrl}>; rel="canonical"`);
+    
     return response;
   }
 };
