@@ -56,7 +56,7 @@ export default {
         'Cache-Control': 'public, max-age=31536000',
         'CDN-Cache-Control': 'public, max-age=31536000',
         'Cloudflare-CDN-Cache-Control': 'public, max-age=31536000',
-        'X-Source': 'Cloudflare-R2 with Jetpack',
+        'X-Source': 'Cloudflare R2 with Jetpack',
       }
     });
 
