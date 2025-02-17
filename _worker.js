@@ -2,70 +2,111 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     
+    // Chỉ cho phép yêu cầu từ 'i.bibica.net'
     if (url.hostname !== 'i.bibica.net') {
-      return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { 
-        status: 404 
+      return new Response(`Request not supported: ${url.hostname} does not match any rules.`, {
+        status: 404,
+        headers: {
+          'Cache-Control': 'no-store'
+        }
       });
     }
 
-    const r2Key = url.pathname + url.search;
+    const hasQueryParams = url.search !== '';
+    const r2Key = url.pathname + (hasQueryParams ? url.search : '');
     
-    // Try to get image from R2 first
-    let cachedImage = await env.IMAGE_BUCKET.get(r2Key);
-    
-    if (!cachedImage) {
-      // Image not in R2, fetch from WordPress and save to R2
-      const wpUrl = new URL(request.url);
-      wpUrl.hostname = 'i0.wp.com';
-      wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
+    // Nếu có query parameters, áp dụng kiểm tra referer
+    if (hasQueryParams) {
+      const referer = request.headers.get('Referer');
+      const allowedDomains = ['bibica.net', 'static.bibica.net'];
       
-      try {
-        const imageResponse = await fetch(wpUrl, {
-          headers: { 'Accept': request.headers.get('Accept') || '*/*' }
-        });
-
-        if (!imageResponse.ok) {
-          throw new Error(`WordPress image fetch failed: ${imageResponse.status}`);
+      if (referer) {
+        const refererUrl = new URL(referer);
+        if (!allowedDomains.includes(refererUrl.hostname)) {
+          return new Response(`Access denied: Requests from ${refererUrl.hostname} are not allowed.`, {
+            status: 403,
+            headers: {
+              'Cache-Control': 'no-store'
+            }
+          });
         }
-
-        // Get the image data as an array buffer
-        const imageData = await imageResponse.arrayBuffer();
-        
-        // Store in R2 with cache headers
-        await env.IMAGE_BUCKET.put(r2Key, imageData, {
-          httpMetadata: {
-            contentType: imageResponse.headers.get('content-type'),
-          },
-          cacheControl: 'public, max-age=31536000, immutable'
-        });
-        
-        // Get the newly stored image from R2
-        cachedImage = await env.IMAGE_BUCKET.get(r2Key);
-        
-        if (!cachedImage) {
-          throw new Error('Failed to retrieve image from R2 after saving');
-        }
-      } catch (error) {
-        return new Response(`Failed to fetch image: ${error.message}`, {
-          status: 500
+      } else {
+        return new Response('Access denied: Referer header is missing.', {
+          status: 403,
+          headers: {
+            'Cache-Control': 'no-store'
+          }
         });
       }
     }
 
-    // Add cache headers
-    const headers = {
-      'content-type': cachedImage.httpMetadata.contentType,
-      'Cache-Control': 'public, max-age=31536000, immutable',
-      'X-Source': 'Cloudflare R2 with Jetpack'
-    };
+    // Kiểm tra cache trong R2
+    let cachedImage = await env.IMAGE_BUCKET.get(r2Key);
 
-    // Always return from R2
-    const response = new Response(cachedImage.body, { headers });
+    if (!cachedImage) {
+      const wpUrl = new URL(request.url);
+      wpUrl.hostname = 'i0.wp.com';
+      wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
+      
+      // Nếu có query params, thêm vào URL WordPress
+      if (hasQueryParams) {
+        wpUrl.search = url.search;
+      }
 
-    // Add canonical URL header
+      try {
+        const imageResponse = await fetch(wpUrl, {
+          headers: { Accept: request.headers.get('Accept') || '*/*' },
+        });
+
+        if (!imageResponse.ok) {
+          return new Response(`Failed to fetch image: ${imageResponse.status}`, {
+            status: imageResponse.status,
+            headers: {
+              'Cache-Control': 'no-store'
+            }
+          });
+        }
+
+        const imageData = await imageResponse.arrayBuffer();
+        
+        // Lưu vào R2
+        await env.IMAGE_BUCKET.put(r2Key, imageData, {
+          httpMetadata: {
+            contentType: imageResponse.headers.get('content-type'),
+          },
+          cacheControl: 'public, max-age=31536000, immutable',
+        });
+
+        cachedImage = await env.IMAGE_BUCKET.get(r2Key);
+        if (!cachedImage) {
+          return new Response('Failed to retrieve image from R2 after saving', {
+            status: 500,
+            headers: {
+              'Cache-Control': 'no-store'
+            }
+          });
+        }
+      } catch (error) {
+        return new Response(`Failed to fetch image: ${error.message}`, {
+          status: 500,
+          headers: {
+            'Cache-Control': 'no-store'
+          }
+        });
+      }
+    }
+
+    const response = new Response(cachedImage.body, {
+      headers: {
+        'content-type': cachedImage.httpMetadata.contentType,
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'X-Source': 'Cloudflare R2 with Jetpack'
+      }
+    });
+
     const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
     response.headers.set('Link', `<${canonicalUrl}>; rel="canonical"`);
     
     return response;
-  }
+  },
 };
