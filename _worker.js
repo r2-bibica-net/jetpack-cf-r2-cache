@@ -18,7 +18,9 @@ export default {
           'content-type': imageResponse.headers.get('content-type'),
           'vary': 'Accept',
           'Link': `<${canonicalUrl}>; rel="canonical"`,
-          'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
+          'Cache-Control': 'public, max-age=315360000, immutable, no-transform',
+          'CDN-Cache-Control': 'public, max-age=315360000, immutable',
+          'Last-Modified': 'Mon, 01 Jan 2024 00:00:00 GMT',
           'Pragma': 'public',
           'X-Served-By': 'Cloudflare & Jetpack'
         }
