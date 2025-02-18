@@ -11,7 +11,7 @@ export default {
         method: 'GET',
         headers: {
           'Accept': 'image/webp',
-          'CDN-Loop': 'cloudflare'
+          'User-Agent': 'Cloudflare-Worker' // Chuẩn hóa User-Agent để Jetpack trả về cùng một version
         }
       });
       const imageResponse = await fetch(wpRequest);
