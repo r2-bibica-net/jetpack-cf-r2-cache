@@ -11,7 +11,6 @@ export default {
         }
       });
     }
-
     const hasQueryParams = url.search !== '';
     const r2Key = url.pathname + (hasQueryParams ? url.search : '');
     
@@ -39,10 +38,8 @@ export default {
         });
       }
     }
-
     // Kiểm tra cache trong R2
     let cachedImage = await env.IMAGE_BUCKET.get(r2Key);
-
     if (!cachedImage) {
       const wpUrl = new URL(request.url);
       wpUrl.hostname = 'i0.wp.com';
@@ -52,12 +49,10 @@ export default {
       if (hasQueryParams) {
         wpUrl.search = url.search;
       }
-
       try {
         const imageResponse = await fetch(wpUrl, {
           headers: { Accept: request.headers.get('Accept') || '*/*' },
         });
-
         if (!imageResponse.ok) {
           return new Response(`Failed to fetch image: ${imageResponse.status}`, {
             status: imageResponse.status,
@@ -66,17 +61,15 @@ export default {
             }
           });
         }
-
         const imageData = await imageResponse.arrayBuffer();
         
         // Lưu vào R2
         await env.IMAGE_BUCKET.put(r2Key, imageData, {
           httpMetadata: {
             contentType: imageResponse.headers.get('content-type'),
-          },
-          cacheControl: 'public, max-age=31536000, immutable',
+            cacheControl: 'public, max-age=31536000, immutable, no-transform'
+          }
         });
-
         cachedImage = await env.IMAGE_BUCKET.get(r2Key);
         if (!cachedImage) {
           return new Response('Failed to retrieve image from R2 after saving', {
@@ -95,15 +88,15 @@ export default {
         });
       }
     }
-
     const response = new Response(cachedImage.body, {
       headers: {
-        'content-type': cachedImage.httpMetadata.contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Content-Type': cachedImage.httpMetadata.contentType,
+        'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
+        'CDN-Cache-Control': 'public, max-age=31536000, immutable',
+        'Pragma': 'public',
         'X-Source': 'Cloudflare R2 with Jetpack'
       }
     });
-
     const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
     response.headers.set('Link', `<${canonicalUrl}>; rel="canonical"`);
     
