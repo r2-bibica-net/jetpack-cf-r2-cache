@@ -11,8 +11,6 @@ export default {
       const imageResponse = await fetch(wpUrl, {
         headers: { 'Accept': request.headers.get('Accept') || '*/*' }
       });
-      const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
-
       return new Response(imageResponse.body, {
       });
     }
