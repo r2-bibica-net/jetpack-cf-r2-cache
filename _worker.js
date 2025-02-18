@@ -2,33 +2,34 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.hostname === 'i.bibica.net') {
+      // Normalize URL
       const wpUrl = new URL(request.url);
       wpUrl.hostname = 'i0.wp.com';
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
 
-      // Tạo một "clean" request, không copy headers từ request gốc
-      const cleanRequest = new Request(wpUrl.toString(), {
+      // Strip request xuống mức tối thiểu
+      const strippedRequest = new Request(wpUrl.toString());
+      const normalizedRequest = new Request(strippedRequest, {
         method: 'GET',
-        headers: new Headers()
-      });
-      
-      // Forward request đến Jetpack
-      const wpRequest = new Request(cleanRequest, {
         headers: {
           'Accept': 'image/webp',
-          'User-Agent': 'Cloudflare-Worker',
-          'Accept-Encoding': 'gzip'
-        }
+          'Accept-Encoding': 'identity',  // Ngăn nén để đảm bảo response nhất quán
+          'User-Agent': 'Cloudflare-Pages', // UA cố định
+          'Host': 'i0.wp.com'
+        },
+        redirect: 'follow'
       });
 
-      const imageResponse = await fetch(wpRequest);
+      // Fetch với request đã normalize
+      const imageResponse = await fetch(normalizedRequest);
 
-      // Tạo response mới với minimal headers
+      // Đảm bảo response headers nhất quán
       return new Response(imageResponse.body, {
         headers: {
           'content-type': 'image/webp',
-          'Cache-Control': 'public, max-age=31536000'
+          'Cache-Control': 'public, max-age=31536000',
+          'content-length': imageResponse.headers.get('content-length')
         }
       });
     }
