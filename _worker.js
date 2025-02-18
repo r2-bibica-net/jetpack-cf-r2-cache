@@ -15,6 +15,8 @@ export default {
 
       return new Response(imageResponse.body, {
         headers: {
+          'cache-control': imageResponse.headers.get('cache-control'),
+          'expires': imageResponse.headers.get('expires'),
           'last-modified': imageResponse.headers.get('last-modified'),
           'link': imageResponse.headers.get('link'),
           'etag': imageResponse.headers.get('etag'),
