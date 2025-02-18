@@ -8,15 +8,19 @@ export default {
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
 
-      const imageResponse = await fetch(wpUrl);
+      // Cố định các header để nhận về cùng một phiên bản của ảnh
+      const imageResponse = await fetch(wpUrl, {
+        headers: {
+          'Accept': 'image/webp', // Cố định format là JPEG
+          'Accept-Encoding': 'identity', // Không nén
+          'User-Agent': 'Mozilla/5.0' // User agent cố định
+        }
+      });
       
-      // Tạo response mới với cache headers được kiểm soát
       return new Response(imageResponse.body, {
         headers: {
-          'Content-Type': imageResponse.headers.get('Content-Type'),
+          'Content-Type': 'image/jpeg',
           'Cache-Control': 'public, max-age=31536000, immutable',
-          'ETag': imageResponse.headers.get('ETag'),
-          'Last-Modified': imageResponse.headers.get('Last-Modified'),
           'Accept-Ranges': 'bytes',
           'Access-Control-Allow-Origin': '*'
         }
