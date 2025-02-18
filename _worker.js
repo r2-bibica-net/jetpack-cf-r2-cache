@@ -1,53 +1,54 @@
 export default {
   async fetch(request) {
     const url = new URL(request.url);
+
+    // Chỉ xử lý các request đến i.bibica.net
     if (url.hostname === 'i.bibica.net') {
-      try {
-        // Sử dụng URL làm cache key
-        const cacheKey = request.url;
-        const cache = await caches.default;
-        
-        // Kiểm tra cache
-        let response = await cache.match(cacheKey);
-        
-        if (!response) {
-          // Cache miss - fetch từ Jetpack
-          const wpUrl = new URL(request.url);
-          wpUrl.hostname = 'i0.wp.com';
-          wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-          wpUrl.search = url.search;
-          
-          const wpRequest = new Request(wpUrl.toString(), {
-            method: 'GET',
-            headers: {
-              'Accept': 'image/webp'
-            }
-          });
+      const wpUrl = new URL(request.url);
+      wpUrl.hostname = 'i0.wp.com';
+      wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
+      wpUrl.search = url.search;
 
-          const imageResponse = await fetch(wpRequest);
-          
-          if (!imageResponse.ok) {
-            throw new Error(`Fetch failed: ${imageResponse.status}`);
-          }
-
-          // Tạo response mới với headers tối thiểu
-          response = new Response(imageResponse.body, {
-            headers: {
-              'content-type': 'image/webp',
-              'Cache-Control': 'public, max-age=31536000',
-              'content-length': imageResponse.headers.get('content-length')
-            }
-          });
-
-          // Cache response
-          await cache.put(cacheKey, response.clone());
+      // Tạo request mới với chỉ Accept header cần thiết
+      const wpRequest = new Request(wpUrl.toString(), {
+        method: 'GET',
+        headers: {
+          'Accept': 'image/webp' // Chỉ yêu cầu hình ảnh webp
+        },
+        // Tùy chỉnh cache key chỉ dựa trên URL
+        cf: {
+          cacheKey: wpUrl.toString(), // Chỉ sử dụng URL làm cache key
+          cacheEverything: true // Bắt Cloudflare cache response
         }
-        
-        return response;
+      });
+
+      try {
+        const imageResponse = await fetch(wpRequest);
+
+        // Kiểm tra nếu response không thành công
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+        }
+
+        // Tạo ETag từ URL pathname và query string
+        const etagValue = `"${btoa(url.pathname + url.search)}"`;
+
+        // Trả về response mới với các headers được kiểm soát
+        return new Response(imageResponse.body, {
+          headers: {
+            'content-type': 'image/webp', // Luôn trả về webp
+            'Cache-Control': 'public, max-age=31536000, immutable', // Cache lâu dài
+            'ETag': etagValue, // ETag để quản lý cache
+            'content-length': imageResponse.headers.get('content-length') // Giữ nguyên content-length
+          }
+        });
       } catch (error) {
-        return new Response(`Error: ${error.message}`, { status: 500 });
+        // Xử lý lỗi nếu có
+        return new Response(`Failed to fetch image: ${error.message}`, { status: 500 });
       }
     }
+
+    // Trả về lỗi nếu hostname không khớp
     return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { status: 404 });
   }
 };
