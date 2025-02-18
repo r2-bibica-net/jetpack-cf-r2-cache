@@ -67,7 +67,7 @@ export default {
         await env.IMAGE_BUCKET.put(r2Key, imageData, {
           httpMetadata: {
             contentType: imageResponse.headers.get('content-type'),
-            cacheControl: 'public, max-age=31536000, immutable, no-transform'
+            cacheControl: 'public, max-age=315360000, immutable, no-transform'
           }
         });
         cachedImage = await env.IMAGE_BUCKET.get(r2Key);
@@ -91,11 +91,11 @@ export default {
   const response = new Response(cachedImage.body, {
     headers: {
       'Content-Type': cachedImage.httpMetadata.contentType,
-      'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
-      'CDN-Cache-Control': 'public, max-age=31536000, immutable',
+      'Cache-Control': 'public, max-age=315360000, immutable, no-transform',
+      'CDN-Cache-Control': 'public, max-age=315360000, immutable',
       'Pragma': 'public',
-      'X-Source': 'Cloudflare R2 with Jetpack',
-      'Last-Modified': 'Mon, 01 Jan 2024 00:00:00 GMT'
+      'Last-Modified': 'Mon, 01 Jan 2024 00:00:00 GMT',
+      'X-Source': 'Cloudflare R2 with Jetpack'
     }
   });
     const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
