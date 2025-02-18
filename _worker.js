@@ -1,21 +1,24 @@
-export default {
-  async fetch(request) {
-    const url = new URL(request.url);
-    
-    if (url.hostname === 'i.bibica.net') {
-      // Chuyển request sang i0.wp.com
-      const wpUrl = new URL(request.url);
-      wpUrl.hostname = 'i0.wp.com';
-      wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-      wpUrl.search = url.search;
-      
-      // Lấy ảnh từ Jetpack
-      const response = await fetch(wpUrl);
-      
-      // Trả về response với headers gốc từ Jetpack
-      return response;
-    }
+export async function onRequest(context) {
+  const { request } = context;
+  const url = new URL(request.url);
 
-    return new Response(`Not found`, { status: 404 });
-  }
+  // Lấy path từ URL request
+  const path = url.pathname;
+
+  // Tạo URL mới dựa trên path
+  const newUrl = `https://i0.wp.com/bibica.net/wp-content/uploads${path}`;
+
+  // Fetch dữ liệu từ URL mới
+  const response = await fetch(newUrl, {
+    cf: {
+      cacheEverything: true,
+      cacheTtl: 86400, // Cache trong 1 ngày
+    },
+  });
+
+  // Trả về response từ fetch
+  return new Response(response.body, {
+    status: response.status,
+    headers: response.headers,
+  });
 }
