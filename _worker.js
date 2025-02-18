@@ -16,10 +16,7 @@ export default {
       return new Response(imageResponse.body, {
         headers: {
           'content-type': imageResponse.headers.get('content-type'),
-          'vary': 'Accept',
           'Link': `<${canonicalUrl}>; rel="canonical"`,
-          'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
-          'Pragma': 'public',
           'X-Served-By': 'Cloudflare & Jetpack'
         }
       });
