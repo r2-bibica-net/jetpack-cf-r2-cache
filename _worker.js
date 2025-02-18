@@ -11,11 +11,7 @@ export default {
         method: 'GET',
         headers: {
           'Accept': 'image/webp',
-          'Accept-Encoding': 'gzip',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept-Language': 'en-US',
-          'Sec-Fetch-Mode': 'no-cors',
-          'Sec-Fetch-Dest': 'image'
+          'CDN-Loop': 'cloudflare'
         }
       });
       const imageResponse = await fetch(wpRequest);
