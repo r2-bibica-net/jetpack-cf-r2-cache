@@ -7,24 +7,22 @@ export default {
       wpUrl.hostname = 'i0.wp.com';
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
-      const wpRequest = new Request(wpUrl.toString(), {
-        method: 'GET',
-        headers: {
-          'Accept': 'image/webp',
-          'User-Agent': 'Cloudflare-Worker' // Chuẩn hóa User-Agent để Jetpack trả về cùng một version
-        }
-      });
+      
+      // Tạo request mới hoàn toàn, không copy headers từ request gốc
+      const wpRequest = new Request(wpUrl.toString());
+      
+      // Chỉ set headers cần thiết
+      wpRequest.headers.set('Accept', 'image/webp');
+
       const imageResponse = await fetch(wpRequest);
 
-      // Tạo ETag từ URL để đảm bảo tính nhất quán
       const etagValue = `"${btoa(url.pathname + url.search)}"`;
-      // Tạo response headers với ETag cố định
       const responseHeaders = new Headers({
         'content-type': 'image/webp',
         'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
         'ETag': etagValue
       });
-      // Copy content-length nếu có
+      
       const contentLength = imageResponse.headers.get('content-length');
       if (contentLength) {
         responseHeaders.set('content-length', contentLength);
