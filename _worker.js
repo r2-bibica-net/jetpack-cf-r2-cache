@@ -88,15 +88,16 @@ export default {
         });
       }
     }
-    const response = new Response(cachedImage.body, {
-      headers: {
-        'Content-Type': cachedImage.httpMetadata.contentType,
-        'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
-        'CDN-Cache-Control': 'public, max-age=31536000, immutable',
-        'Pragma': 'public',
-        'X-Source': 'Cloudflare R2 with Jetpack'
-      }
-    });
+  const response = new Response(cachedImage.body, {
+    headers: {
+      'Content-Type': cachedImage.httpMetadata.contentType,
+      'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
+      'CDN-Cache-Control': 'public, max-age=31536000, immutable',
+      'Pragma': 'public',
+      'X-Source': 'Cloudflare R2 with Jetpack',
+      'Last-Modified': 'Mon, 01 Jan 2024 00:00:00 GMT'
+    }
+  });
     const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
     response.headers.set('Link', `<${canonicalUrl}>; rel="canonical"`);
     
