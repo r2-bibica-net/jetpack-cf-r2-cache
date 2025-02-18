@@ -2,16 +2,27 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.hostname === 'i.bibica.net') {
-      const wpUrl = new URL(request.url);
+      // Create a new normalized request
+      const normalizedRequest = new Request(request.url, {
+        method: 'GET',
+        // Don't forward any headers from the original request
+        headers: {}
+      });
+
+      const wpUrl = new URL(normalizedRequest.url);
       wpUrl.hostname = 'i0.wp.com';
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
 
-      // Chỉ định rõ Accept: image/webp
-      const headers = new Headers();
-      headers.set('Accept', 'image/webp');
-      
-      const imageResponse = await fetch(wpUrl, { headers });
+      // Use minimal headers for wp.com request
+      const wpRequest = new Request(wpUrl.toString(), {
+        method: 'GET',
+        headers: {
+          'Accept': 'image/webp'
+        }
+      });
+
+      const imageResponse = await fetch(wpRequest);
       const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
 
       return new Response(imageResponse.body, {
