@@ -7,26 +7,17 @@ export default {
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
       
-      // Normalize hoàn toàn request để Jetpack luôn trả về cùng một phiên bản
       const wpRequest = new Request(wpUrl.toString(), {
         method: 'GET',
         headers: {
-          'Accept': 'image/webp',
-          'Accept-Encoding': 'gzip',
-          'Accept-Language': 'en-US,en;q=0.9',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0',
-          'Sec-CH-UA': '"Not A(Brand";v="99", "Chrome";v="120"',
-          'Sec-CH-UA-Mobile': '?0',
-          'Sec-CH-UA-Platform': '"Windows"'
+          'Accept': 'image/webp'
         }
       });
 
       const imageResponse = await fetch(wpRequest);
-
       return new Response(imageResponse.body, {
         headers: {
-          'content-type': 'image/webp',
-          'Cache-Control': 'public, max-age=31536000'
+          'content-type': 'image/webp'
         }
       });
     }
