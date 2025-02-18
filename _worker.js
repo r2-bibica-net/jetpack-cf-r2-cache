@@ -1,31 +1,29 @@
 export default {
   async fetch(request) {
     const url = new URL(request.url);
-
     if (url.hostname === 'i.bibica.net') {
       const wpUrl = new URL(request.url);
       wpUrl.hostname = 'i0.wp.com';
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
 
-      const imageResponse = await fetch(wpUrl, {
-        headers: { 'Accept': request.headers.get('Accept') || '*/*' }
-      });
-      const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
-
-      return new Response(imageResponse.body, {
+      // Tạo request mới với headers tối thiểu
+      const newRequest = new Request(wpUrl, {
+        method: 'GET',
         headers: {
-          'content-type': imageResponse.headers.get('content-type'),
-          'vary': 'Accept',
-          'Link': `<${canonicalUrl}>; rel="canonical"`,
-          'Cache-Control': 'public, max-age=315360000, immutable, no-transform',
-          'CDN-Cache-Control': 'public, max-age=315360000, immutable',
-          'Last-Modified': 'Mon, 01 Jan 2024 00:00:00 GMT',
-          'Pragma': 'public',
-          'X-Served-By': 'Cloudflare & Jetpack'
+          'Accept': 'image/*'
+        }
+      });
+
+      return fetch(newRequest, {
+        cf: {
+          cacheEverything: true,
+          cacheTtl: 63115200
         }
       });
     }
-    return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { status: 404 });
+    return new Response(`Request not supported: ${url.hostname} does not match any rules.`, {
+      status: 404
+    });
   }
 };
