@@ -7,19 +7,21 @@ export default {
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
 
-      // Tạo request mới với headers tối thiểu
-      const newRequest = new Request(wpUrl, {
-        method: 'GET',
-        headers: {
-          'Accept': 'image/*'
-        }
-      });
-
-      return fetch(newRequest, {
+      const response = await fetch(wpUrl, {
         cf: {
           cacheEverything: true,
           cacheTtl: 63115200
         }
+      });
+
+      // Tạo response mới và xóa header vary
+      const newHeaders = new Headers(response.headers);
+      newHeaders.delete('vary');
+      
+      return new Response(response.body, {
+        headers: newHeaders,
+        status: response.status,
+        statusText: response.statusText
       });
     }
     return new Response(`Request not supported: ${url.hostname} does not match any rules.`, {
