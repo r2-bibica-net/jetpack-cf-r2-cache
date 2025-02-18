@@ -16,7 +16,9 @@ export default {
       return new Response(imageResponse.body, {
         headers: {
           'last-modified': imageResponse.headers.get('last-modified'),
-          'Link': `<${canonicalUrl}>; rel="canonical"`,
+          'link': imageResponse.headers.get('link'),
+          'etag': imageResponse.headers.get('etag'),
+          'x-nc': imageResponse.headers.get('x-nc'),
           'X-Served-By': 'Cloudflare & Jetpack'
         }
       });
