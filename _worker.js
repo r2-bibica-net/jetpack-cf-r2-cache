@@ -10,10 +10,7 @@ export default {
       return new Response(imageResponse.body, {
         headers: {
           'link': imageResponse.headers.get('link'),
-          'last-modified': imageResponse.headers.get('last-modified'),
-          'expires': imageResponse.headers.get('expires'),
-          'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
-          'Pragma': 'public',
+          'x-nc': imageResponse.headers.get('x-nc'),
           'X-Served-By': 'Cloudflare & Jetpack'
         }
       });
