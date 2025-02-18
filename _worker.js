@@ -2,65 +2,41 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
     if (url.hostname === 'i.bibica.net') {
-      // Chuẩn hóa cache key bằng cách chỉ sử dụng pathname và search
-      const cacheKey = url.pathname + url.search;
-      
-      // Tạo request mới đến WordPress
+      // Create a new normalized request
       const wpUrl = new URL(request.url);
       wpUrl.hostname = 'i0.wp.com';
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
-
-      // Kiểm tra If-None-Match header
-      const ifNoneMatch = request.headers.get('If-None-Match');
-      const etagValue = `"${btoa(cacheKey)}"`;
-      
-      if (ifNoneMatch === etagValue) {
-        return new Response(null, {
-          status: 304,
-          headers: {
-            'Cache-Control': 'public, max-age=31536000, immutable',
-            'ETag': etagValue
-          }
-        });
-      }
-
-      // Thực hiện request với các headers cố định
       const wpRequest = new Request(wpUrl.toString(), {
         method: 'GET',
         headers: {
           'Accept': 'image/webp',
-          'Cache-Control': 'no-cache'  // Đảm bảo luôn nhận được response mới từ wp.com
+          'Accept-Encoding': 'gzip',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept-Language': 'en-US',
+          'Sec-Fetch-Mode': 'no-cors',
+          'Sec-Fetch-Dest': 'image'
         }
       });
-      
       const imageResponse = await fetch(wpRequest);
-      
-      // Tạo response headers với các giá trị cố định
-      const responseHeaders = new Headers({
-        'Content-Type': 'image/webp',
-        'Cache-Control': 'public, max-age=31536000, immutable',
-        'ETag': etagValue,
-        'Vary': 'Accept'  // Chỉ vary theo Accept header
-      });
 
+      // Tạo ETag từ URL để đảm bảo tính nhất quán
+      const etagValue = `"${btoa(url.pathname + url.search)}"`;
+      // Tạo response headers với ETag cố định
+      const responseHeaders = new Headers({
+        'content-type': 'image/webp',
+        'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
+        'ETag': etagValue
+      });
       // Copy content-length nếu có
       const contentLength = imageResponse.headers.get('content-length');
       if (contentLength) {
-        responseHeaders.set('Content-Length', contentLength);
+        responseHeaders.set('content-length', contentLength);
       }
-
       return new Response(imageResponse.body, {
-        status: imageResponse.status,
         headers: responseHeaders
       });
     }
-
-    return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { 
-      status: 404,
-      headers: {
-        'Cache-Control': 'no-store'
-      }
-    });
+    return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { status: 404 });
   }
 };
