@@ -19,6 +19,7 @@ export default {
           'Link': `<${canonicalUrl}>; rel="canonical"`,
           'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
           'Pragma': 'public',
+          'Last-Modified': 'Mon, 01 Jan 2024 00:00:00 GMT',          
           'X-Served-By': 'Cloudflare & Jetpack'
         }
       });
