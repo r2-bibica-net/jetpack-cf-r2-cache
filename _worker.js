@@ -1,32 +1,23 @@
 export async function onRequest(context) {
-  // Lấy request từ context
   const { request } = context;
-
-  // Lấy URL gốc từ request
   const url = new URL(request.url);
 
-  // Đường dẫn gốc cần thay thế
-  const originalBaseUrl = "https://i0.wp.com/bibica.net/wp-content/uploads";
+  // Lấy đường dẫn và tham số truy vấn từ URL
+  const path = url.pathname;
+  const query = url.search;
 
-  // Xây dựng lại đường dẫn mới
-  const newPathname = url.pathname;
+  // Base URL của WordPress (https://i0.wp.com/bibica.net/wp-content/uploads)
+  const baseURL = "https://i0.wp.com/bibica.net/wp-content/uploads";
 
-  // Tạo URL mới dựa trên originalBaseUrl và newPathname
-  const targetUrl = new URL(originalBaseUrl + newPathname);
+  // Tạo URL mới
+  const newURL = `${baseURL}${path}${query}`;
 
-  // Copy query parameters từ request ban đầu
-  targetUrl.search = url.search;
+  // Fetch từ URL mới
+  const response = await fetch(newURL);
 
-  // Forward request đến targetUrl
-  const modifiedRequest = new Request(targetUrl.toString(), {
-    method: request.method,
-    headers: request.headers,
-    body: request.body,
+  // Trả về response từ URL mới
+  return new Response(response.body, {
+    status: response.status,
+    headers: response.headers,
   });
-
-  // Fetch dữ liệu từ targetUrl và trả về response
-  const response = await fetch(modifiedRequest);
-
-  // Trả về response với các header phù hợp
-  return new Response(response.body, response);
 }
