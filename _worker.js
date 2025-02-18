@@ -16,6 +16,7 @@ export default {
       return new Response(imageResponse.body, {
         headers: {
           'content-type': imageResponse.headers.get('content-type'),
+          'last-modified': imageResponse.headers.get('last-modified'),
           'vary': 'Accept',
           'Link': `<${canonicalUrl}>; rel="canonical"`,
           'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
