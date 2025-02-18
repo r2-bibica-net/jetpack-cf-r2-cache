@@ -8,27 +8,29 @@ export default {
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
       
-      const imageResponse = await fetch(wpUrl, {
-        headers: {
-          'Accept': request.headers.get('Accept') || '*/*'
-        }
+      // Forward các header quan trọng từ request gốc
+      const headers = new Headers({
+        'Accept': request.headers.get('Accept') || '*/*',
+        'If-None-Match': request.headers.get('If-None-Match'),
+        'If-Modified-Since': request.headers.get('If-Modified-Since')
       });
 
-      // Copy các headers quan trọng từ response gốc
-      const headers = new Headers(imageResponse.headers);
-      
-      // Thêm cache control headers
-      headers.set('Cache-Control', 'public, max-age=31536000'); // Cache 1 năm
+      const imageResponse = await fetch(wpUrl, {
+        headers: headers
+      });
+
+      // Copy tất cả headers từ response gốc
+      const responseHeaders = new Headers(imageResponse.headers);
       
       return new Response(imageResponse.body, {
-        headers: headers,
         status: imageResponse.status,
-        statusText: imageResponse.statusText
+        statusText: imageResponse.statusText,
+        headers: responseHeaders
       });
     }
     
     return new Response(`Request not supported: ${url.hostname} does not match any rules.`, {
-      status: 404 
+      status: 404
     });
   }
 };
