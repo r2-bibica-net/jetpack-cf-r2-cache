@@ -14,10 +14,6 @@ export default {
       const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
 
       return new Response(imageResponse.body, {
-        headers: {
-          'Link': `<${canonicalUrl}>; rel="canonical"`,
-          'X-Served-By': 'Cloudflare & Jetpack'
-        }
       });
     }
     return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { status: 404 });
