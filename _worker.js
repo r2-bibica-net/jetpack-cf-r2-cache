@@ -7,9 +7,9 @@ export default {
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
       
-      // 1. Tạo request mới hoàn toàn để tránh forward headers
       const wpRequest = new Request(wpUrl.toString());
       wpRequest.headers.set('Accept', 'image/webp');
+      wpRequest.headers.set('Accept-Encoding', 'gzip'); // Cố định encoding
 
       const imageResponse = await fetch(wpRequest);
 
@@ -18,8 +18,7 @@ export default {
         'content-type': 'image/webp',
         'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
         'ETag': etagValue,
-        // 2. Thêm header này để Cloudflare không vary cache theo client headers
-        'CDN-Cache-Control': 'public, max-age=31536000, immutable, no-transform'
+        'Vary': 'none'  // Override vary header
       });
       
       const contentLength = imageResponse.headers.get('content-length');
