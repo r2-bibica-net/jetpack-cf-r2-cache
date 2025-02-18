@@ -1,1 +1,1 @@
-# bibica.net-jetpack-cloudflare-pagesv2
+# Sử dụng Jetpack - Cloudflare Pages - R2 làm proxy và cache ảnh trên WordPress
