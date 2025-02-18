@@ -1,38 +1,50 @@
 export default {
   async fetch(request) {
     const url = new URL(request.url);
+
+    // Chỉ xử lý các request đến i.bibica.net
     if (url.hostname === 'i.bibica.net') {
-      // Normalize URL
       const wpUrl = new URL(request.url);
       wpUrl.hostname = 'i0.wp.com';
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
 
-      // Strip request xuống mức tối thiểu
-      const strippedRequest = new Request(wpUrl.toString());
-      const normalizedRequest = new Request(strippedRequest, {
+      // Tạo request mới với chỉ Accept header cần thiết
+      const wpRequest = new Request(wpUrl.toString(), {
         method: 'GET',
         headers: {
-          'Accept': 'image/webp',
-          'Accept-Encoding': 'identity',  // Ngăn nén để đảm bảo response nhất quán
-          'User-Agent': 'Cloudflare-Pages', // UA cố định
-          'Host': 'i0.wp.com'
+          'Accept': 'image/webp' // Chỉ yêu cầu hình ảnh webp
         },
-        redirect: 'follow'
-      });
-
-      // Fetch với request đã normalize
-      const imageResponse = await fetch(normalizedRequest);
-
-      // Đảm bảo response headers nhất quán
-      return new Response(imageResponse.body, {
-        headers: {
-          'content-type': 'image/webp',
-          'Cache-Control': 'public, max-age=31536000',
-          'content-length': imageResponse.headers.get('content-length')
+        // Tùy chỉnh cache key chỉ dựa trên URL
+        cf: {
+          cacheKey: wpUrl.toString(), // Chỉ sử dụng URL làm cache key
+          cacheEverything: true, // Bắt Cloudflare cache response
+          cacheTtl: 31536000 // Đặt TTL cho cache (1 năm)
         }
       });
+
+      try {
+        const imageResponse = await fetch(wpRequest);
+
+        // Kiểm tra nếu response không thành công
+        if (!imageResponse.ok) {
+          throw new Error(`Failed to fetch image: ${imageResponse.statusText}`);
+        }
+
+        // Trả về response mới với các headers được kiểm soát
+        return new Response(imageResponse.body, {
+          headers: {
+            'content-type': 'image/webp', // Luôn trả về webp
+            'Cache-Control': 'public, max-age=31536000, immutable' // Cache lâu dài
+          }
+        });
+      } catch (error) {
+        // Xử lý lỗi nếu có
+        return new Response(`Failed to fetch image: ${error.message}`, { status: 500 });
+      }
     }
-    return new Response(`Request not supported`, { status: 404 });
+
+    // Trả về lỗi nếu hostname không khớp
+    return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { status: 404 });
   }
 };
