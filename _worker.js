@@ -1,23 +1,26 @@
-export async function onRequest(context) {
-  const { request } = context;
-  const url = new URL(request.url);
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
 
-  // Lấy đường dẫn và tham số truy vấn từ URL
-  const path = url.pathname;
-  const query = url.search;
+    if (url.hostname === 'i.bibica.net') {
+      const wpUrl = new URL(request.url);
+      wpUrl.hostname = 'i0.wp.com';
+      wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
+      wpUrl.search = url.search;
 
-  // Base URL của WordPress (https://i0.wp.com/bibica.net/wp-content/uploads)
-  const baseURL = "https://i0.wp.com/bibica.net/wp-content/uploads";
+      const imageResponse = await fetch(wpUrl, {
+        headers: { 'Accept': request.headers.get('Accept') || '*/*' }
+      });
 
-  // Tạo URL mới
-  const newURL = `${baseURL}${path}${query}`;
-
-  // Fetch từ URL mới
-  const response = await fetch(newURL);
-
-  // Trả về response từ URL mới
-  return new Response(response.body, {
-    status: response.status,
-    headers: response.headers,
-  });
-}
+      return new Response(imageResponse.body, {
+        headers: {
+          'link': imageResponse.headers.get('link'),
+          'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
+          'Pragma': 'public',
+          'X-Served-By': 'Cloudflare & Jetpack'
+        }
+      });
+    }
+    return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { status: 404 });
+  }
+};
