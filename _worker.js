@@ -14,10 +14,14 @@ export default {
 
       return new Response(imageResponse.body, {
         headers: {
-          'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
+          'cache-control': imageResponse.headers.get('cache-control'),
           'content-type': imageResponse.headers.get('content-type'),
           'content-type': 'image/webp',
           'link': imageResponse.headers.get('link'),
+          'etag': imageResponse.headers.get('etag'),
+          'last-modified': imageResponse.headers.get('last-modified'),
+          'date': imageResponse.headers.get('date'),
+          'expires': imageResponse.headers.get('expires'),
           'x-nc': imageResponse.headers.get('x-nc'),
           'X-Served-By': 'Cloudflare & Jetpack'
         }
