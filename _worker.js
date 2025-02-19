@@ -12,13 +12,7 @@ export default {
 
       return new Response(imageResponse.body, {
         headers: {
-          'cache-control': imageResponse.headers.get('cache-control'),
-          'content-type': imageResponse.headers.get('content-type'),
-          'content-type': imageResponse.headers.get('content-type'),
-          'last-modified': imageResponse.headers.get('last-modified'),
-          'link': imageResponse.headers.get('link'),
-          'x-nc': imageResponse.headers.get('x-nc'),
-          'X-Served-By': 'Cloudflare & Jetpack'
+
         }
       });
     }
