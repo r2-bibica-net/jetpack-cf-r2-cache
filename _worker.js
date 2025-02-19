@@ -8,11 +8,13 @@ export default {
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
 
-      const imageResponse = await fetch(wpUrl);
+      const imageResponse = await fetch(wpUrl, {
+        headers: { 'Accept': 'image/webp,*/*' }
+      });
 
       return new Response(imageResponse.body, {
         headers: {
-        'content-type': imageResponse.headers.get('content-type')
+        'X-Served-By': 'Cloudflare & Jetpack'
         }
       });
     }
