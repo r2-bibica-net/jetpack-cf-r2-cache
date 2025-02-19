@@ -10,10 +10,6 @@ export default {
       const wpUrl = new URL('https://i0.wp.com/bibica.net/wp-content/uploads' + url.pathname + url.search);
 
       const standardizedHeaders = {
-        ':authority': 'i.bibica.net',
-        ':method': 'GET',
-        ':path': url.pathname + url.search,
-        ':scheme': 'https',
         'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
         'accept-encoding': 'gzip, deflate, br, zstd',
         'accept-language': 'vi',
