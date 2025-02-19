@@ -34,29 +34,19 @@ export default {
       }
 
       try {
-        // Cố định Accept header để giảm số lượng phiên bản được cache
-        const imageResponse = await fetch(wpUrl, {
-          headers: {
-            'Accept': 'image/webp',
-            'Accept-Encoding': 'gzip',
-            'User-Agent': 'Mozilla/5.0 Chrome/120.0.0.0'
-          },
-        });
+        // Để nguyên request headers khi fetch từ Jetpack
+        const imageResponse = await fetch(wpUrl);
 
         if (!imageResponse.ok) {
           return new Response(`Failed to fetch image`, { status: imageResponse.status });
         }
 
         const imageData = await imageResponse.arrayBuffer();
-        const contentType = imageResponse.headers.get('content-type');
-
-        // Thêm metadata để tracking
+        
+        // Lưu vào R2 với content-type từ Jetpack
         await env.IMAGE_BUCKET.put(r2Key, imageData, {
           httpMetadata: {
-            contentType,
-            cacheControl: 'public, max-age=315360000, immutable, no-transform',
-            'X-Original-URL': wpUrl.toString(),
-            'X-Cached-At': new Date().toISOString()
+            contentType: imageResponse.headers.get('content-type')
           }
         });
 
@@ -69,16 +59,10 @@ export default {
       }
     }
 
+    // Trả về response với minimal headers
     const response = new Response(cachedImage.body, {
       headers: {
-        'Content-Type': cachedImage.httpMetadata.contentType,
-        'Cache-Control': 'public, max-age=315360000, immutable, no-transform',
-        'CDN-Cache-Control': 'public, max-age=315360000, immutable',
-        'Pragma': 'public',
-        'Last-Modified': 'Mon, 01 Jan 2024 00:00:00 GMT',
-        'X-Source': 'Cloudflare R2',
-        'X-Cache': cachedImage ? 'HIT' : 'MISS',
-        'Vary': 'Accept' // Thêm Vary header để control cache
+        'Content-Type': cachedImage.httpMetadata.contentType
       }
     });
 
