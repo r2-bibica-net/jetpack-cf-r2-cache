@@ -63,7 +63,7 @@ export default {
     const response = new Response(cachedImage.body, {
       headers: {
         'Content-Type': cachedImage.httpMetadata.contentType,
-        'X-Source': 'Cloudflare R2',
+        'X-Source': 'Cloudflare R2 & Jetpack',
         'X-Cache': cachedImage ? 'HIT' : 'MISS'
       }
     });
