@@ -12,7 +12,7 @@ export default {
 
       return new Response(imageResponse.body, {
         headers: {
-        'content-type': imageResponse.headers.get('content-type'), 
+        'content-type': 'image/webp', 
         'X-Served-By': 'Cloudflare & Jetpack'
         }
       });
