@@ -8,9 +8,7 @@ export default {
       wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
       wpUrl.search = url.search;
 
-      const imageResponse = await fetch(wpUrl, {
-       
-      });
+      const imageResponse = await fetch(wpUrl);
 
       return new Response(imageResponse.body, {
         headers: {
