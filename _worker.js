@@ -14,8 +14,9 @@ export default {
 
       return new Response(imageResponse.body, {
         headers: {
-          'cache-control': 'no-store',
+          'cache-control': imageResponse.headers.get('cache-control'),
           'content-type': 'image/webp',
+          'cf-cache-status': 'DYNAMIC',
           'link': imageResponse.headers.get('link'),
           'x-nc': imageResponse.headers.get('x-nc'),
           'X-Served-By': 'Cloudflare & Jetpack'
