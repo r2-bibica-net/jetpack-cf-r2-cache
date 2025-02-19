@@ -9,7 +9,7 @@ export default {
       wpUrl.search = url.search;
 
       const imageResponse = await fetch(wpUrl, {
-        headers: { 'Accept': 'image/webp,*/*' }
+       
       });
 
       return new Response(imageResponse.body, {
