@@ -62,7 +62,9 @@ export default {
     // Trả về response với minimal headers
     const response = new Response(cachedImage.body, {
       headers: {
-        'Content-Type': cachedImage.httpMetadata.contentType
+        'Content-Type': cachedImage.httpMetadata.contentType,
+        'X-Source': 'Cloudflare R2',
+        'X-Cache': cachedImage ? 'HIT' : 'MISS'
       }
     });
 
