@@ -2,7 +2,6 @@ export default {
   async fetch(request) {
     const url = new URL(request.url);
 
-    // Chuyển hướng i.bibica.net sang i0.wp.com/bibica.net/wp-content/uploads
     if (url.hostname === 'i.bibica.net') {
       if (url.pathname.startsWith('/comment/avatar')) {
         // Chuyển hướng i.bibica.net/comment/avatar sang https://secure.gravatar.com/avatar
@@ -23,7 +22,7 @@ export default {
           }
         });
       } else if (url.pathname.startsWith('/comment')) {
-        // Chuyển hướng i.bibica.net/comment sang https://comment.bibica.net/static/images
+        // Chuyển hướng i.bibica.net/comment sang https://i0.wp.com/comment.bibica.net/static/images
         const commentUrl = new URL(request.url);
         commentUrl.hostname = 'i0.wp.com';
         commentUrl.pathname = '/comment.bibica.net/static/images' + url.pathname.replace('/comment', '');
@@ -37,7 +36,7 @@ export default {
             'content-type': 'image/webp',
             'link': commentResponse.headers.get('link'),
             'X-Cache': commentResponse.headers.get('x-nc'),
-            'X-Served-By': 'Cloudflare Pages & Comment Service'
+            'X-Served-By': 'Cloudflare Pages & Artalk & Jetpack'
           }
         });
       } else {
