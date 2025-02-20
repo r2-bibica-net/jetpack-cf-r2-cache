@@ -22,7 +22,7 @@ export default {
           'last-modified': imageResponse.headers.get('last-modified'),
           'cf-cache-status': imageResponse.headers.get('cf-cache-status') || 'DYNAMIC',
           'X-Cache': imageResponse.headers.get('x-nc'),
-          'X-Served-By': 'Cloudflare Pages & Jetpack',
+          'X-Served-By': 'Cloudflare Pages & Jetpack'
         }
       });
     }
