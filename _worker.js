@@ -16,10 +16,7 @@ export default {
         headers: {
           'Cache-Control': imageResponse.headers.get('Cache-Control'),
           'content-type': 'image/webp',
-          'vary': 'Accept',
           'link': imageResponse.headers.get('link'),
-          'last-modified': imageResponse.headers.get('last-modified'),
-          'cf-cache-status': imageResponse.headers.get('cf-cache-status') || 'DYNAMIC',
           'X-Cache': imageResponse.headers.get('x-nc'),
           'X-Served-By': 'Cloudflare Pages & Jetpack'
         }
