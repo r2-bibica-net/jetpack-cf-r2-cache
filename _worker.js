@@ -1,23 +1,27 @@
+// Thêm logs để debug
 const routes = [
   {
     hostname: 'i.bibica.net',
     pathPrefix: '/avatar',
-    targetHostname: 'secure.gravatar.com',
-    targetPathPrefix: '/avatar',
+    targetHostname: 'secure.gravatar.com', 
+    targetPathPrefix: '',  // Sửa lại để khớp với code gốc
+    pathTransform: (path) => '/avatar' + path.slice('/avatar'.length),
     servedBy: 'Cloudflare Pages & Gravatar'
   },
   {
     hostname: 'i.bibica.net',
     pathPrefix: '/comment',
     targetHostname: 'i0.wp.com',
-    targetPathPrefix: '/comment.bibica.net/static/images',
+    targetPathPrefix: '', // Sửa lại để khớp với code gốc
+    pathTransform: (path) => '/comment.bibica.net/static/images' + path.slice('/comment'.length),
     servedBy: 'Cloudflare Pages & Artalk & Jetpack'
   },
   {
     hostname: 'i.bibica.net',
     pathPrefix: '/',
     targetHostname: 'i0.wp.com',
-    targetPathPrefix: '/bibica.net/wp-content/uploads',
+    targetPathPrefix: '', // Sửa lại để khớp với code gốc
+    pathTransform: (path) => '/bibica.net/wp-content/uploads' + path,
     servedBy: 'Cloudflare Pages & Jetpack'
   }
 ];
@@ -37,29 +41,38 @@ export default {
       route => url.pathname.startsWith(route.pathPrefix)
     ) || routes[routes.length - 1];
 
-    // Tạo URL đích và giữ nguyên query parameters
+    // Tạo URL đích
     const targetUrl = new URL(request.url);
     targetUrl.hostname = matchedRoute.targetHostname;
-    targetUrl.pathname = matchedRoute.targetPathPrefix + 
-                        url.pathname.slice(matchedRoute.pathPrefix.length);
-    targetUrl.search = url.search; // Giữ nguyên query parameters
+    targetUrl.pathname = matchedRoute.pathTransform(url.pathname);
+    targetUrl.search = url.search;
 
-    // Fetch response với header Accept gốc
+    console.log('Original URL:', url.toString());
+    console.log('Target URL:', targetUrl.toString());
+
+    // Fetch response
     const response = await fetch(targetUrl, {
       headers: {
         'Accept': request.headers.get('Accept') || '*/*'
       }
     });
 
-    // Lấy các header cụ thể từ phản hồi
-    const linkHeader = response.headers.get('link');
-    const xCacheHeader = response.headers.get('x-nc');
+    // Log response status
+    console.log('Response status:', response.status);
+
+    // Kiểm tra nếu response không ok
+    if (!response.ok) {
+      console.error('Response not OK:', response.status, response.statusText);
+      return new Response(`Failed to fetch: ${response.status} ${response.statusText}`, {
+        status: response.status
+      });
+    }
 
     return new Response(response.body, {
       headers: {
         'content-type': 'image/webp',
-        'link': linkHeader || '',
-        'X-Cache': xCacheHeader || '',
+        'link': response.headers.get('link') || '',
+        'X-Cache': response.headers.get('x-nc') || '',
         'X-Served-By': matchedRoute.servedBy
       }
     });
