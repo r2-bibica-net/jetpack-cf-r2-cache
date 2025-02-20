@@ -7,7 +7,7 @@ export default {
       if (url.pathname.startsWith('/comment/avatar')) {
         // Chuyển hướng i.bibica.net/comment/avatar sang https://gravatar.webp.se
         const gravatarUrl = new URL(request.url);
-        gravatarUrl.hostname = 'gravatar.webp.se';
+        gravatarUrl.hostname = 'secure.gravatar.com/avatar';
         gravatarUrl.pathname = url.pathname.replace('/comment/avatar', '');
 
         const gravatarResponse = await fetch(gravatarUrl, {
