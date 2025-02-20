@@ -11,16 +11,18 @@ export default {
       const imageResponse = await fetch(wpUrl, {
         headers: { 'Accept': request.headers.get('Accept') || '*/*' }
       });
-      const canonicalUrl = `http://bibica.net/wp-content/uploads${url.pathname}`;
 
       return new Response(imageResponse.body, {
         headers: {
-          'content-type': imageResponse.headers.get('content-type'),
+          'Cache-Control': imageResponse.headers.get('Cache-Control'),
+          'content-type': 'image/webp',
           'vary': 'Accept',
-          'Link': `<${canonicalUrl}>; rel="canonical"`,
-          'Cache-Control': 'public, max-age=31536000, immutable, no-transform',
-          'Pragma': 'public',
+          'link': imageResponse.headers.get('link'),
           'X-Served-By': 'Cloudflare & Jetpack'
+          'last-modified': imageResponse.headers.get('last-modified'),
+          'cf-cache-status': imageResponse.headers.get('cf-cache-status') || 'DYNAMIC',
+          'X-Cache': imageResponse.headers.get('x-nc'),
+          'X-Served-By': 'Cloudflare Pages & Jetpack',
         }
       });
     }
