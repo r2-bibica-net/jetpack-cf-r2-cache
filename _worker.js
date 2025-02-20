@@ -14,7 +14,6 @@ export default {
 
       return new Response(imageResponse.body, {
         headers: {
-          'Cache-Control': imageResponse.headers.get('Cache-Control'),
           'content-type': 'image/webp',
           'link': imageResponse.headers.get('link'),
           'X-Cache': imageResponse.headers.get('x-nc'),
