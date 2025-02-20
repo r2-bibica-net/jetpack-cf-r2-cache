@@ -18,7 +18,6 @@ export default {
           'content-type': 'image/webp',
           'vary': 'Accept',
           'link': imageResponse.headers.get('link'),
-          'X-Served-By': 'Cloudflare & Jetpack'
           'last-modified': imageResponse.headers.get('last-modified'),
           'cf-cache-status': imageResponse.headers.get('cf-cache-status') || 'DYNAMIC',
           'X-Cache': imageResponse.headers.get('x-nc'),
