@@ -25,8 +25,8 @@ export default {
       } else if (url.pathname.startsWith('/comment')) {
         // Chuyển hướng i.bibica.net/comment sang https://comment.bibica.net/static/images
         const commentUrl = new URL(request.url);
-        commentUrl.hostname = 'comment.bibica.net';
-        commentUrl.pathname = '/static/images' + url.pathname.replace('/comment', '');
+        commentUrl.hostname = 'i0.wp.com';
+        commentUrl.pathname = '/comment.bibica.net/static/images' + url.pathname.replace('/comment', '');
 
         const commentResponse = await fetch(commentUrl, {
           headers: { 'Accept': request.headers.get('Accept') || '*/*' }
