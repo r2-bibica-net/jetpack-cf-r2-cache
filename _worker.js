@@ -12,8 +12,8 @@ export default {
         targetUrl.pathname = url.pathname.replace('/comment/avatar', '');
       } else if (url.pathname.startsWith('/comment')) {
         // Route for comment static images
-        targetUrl.hostname = 'comment.bibica.net';
-        targetUrl.pathname = '/static/images' + url.pathname.replace('/comment', '');
+        targetUrl.hostname = 'i0.wp.com';
+        targetUrl.pathname = '/comment.bibica.net/static/images' + url.pathname.replace('/comment', '');
       } else {
         // Default WordPress media route
         targetUrl.hostname = 'i0.wp.com';
