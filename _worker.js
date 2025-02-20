@@ -3,11 +3,11 @@ export default {
     const url = new URL(request.url);
 
     if (url.hostname === 'i.bibica.net') {
-      if (url.pathname.startsWith('/comment/avatar')) {
+      if (url.pathname.startsWith('/avatar')) {
         // Chuyển hướng i.bibica.net/comment/avatar sang https://secure.gravatar.com/avatar
         const gravatarUrl = new URL(request.url);
         gravatarUrl.hostname = 'secure.gravatar.com';
-        gravatarUrl.pathname = '/avatar' + url.pathname.replace('/comment/avatar', '');
+        gravatarUrl.pathname = '/avatar' + url.pathname.replace('/avatar', '');
 
         const gravatarResponse = await fetch(gravatarUrl, {
           headers: { 'Accept': request.headers.get('Accept') || '*/*' }
