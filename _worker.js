@@ -5,10 +5,10 @@ export default {
     // Chuyển hướng i.bibica.net sang i0.wp.com/bibica.net/wp-content/uploads
     if (url.hostname === 'i.bibica.net') {
       if (url.pathname.startsWith('/comment/avatar')) {
-        // Chuyển hướng i.bibica.net/comment/avatar sang https://gravatar.webp.se
+        // Chuyển hướng i.bibica.net/comment/avatar sang https://secure.gravatar.com/avatar
         const gravatarUrl = new URL(request.url);
-        gravatarUrl.hostname = 'secure.gravatar.com/avatar';
-        gravatarUrl.pathname = url.pathname.replace('/comment/avatar', '');
+        gravatarUrl.hostname = 'secure.gravatar.com';
+        gravatarUrl.pathname = '/avatar' + url.pathname.replace('/comment/avatar', '');
 
         const gravatarResponse = await fetch(gravatarUrl, {
           headers: { 'Accept': request.headers.get('Accept') || '*/*' }
