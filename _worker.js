@@ -3,10 +3,7 @@ export default {
     const url = new URL(request.url);
 
     if (url.hostname === 'i.bibica.net') {
-      const wpUrl = new URL(request.url);
-      wpUrl.hostname = 'i0.wp.com';
-      wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-      wpUrl.search = url.search;
+      const wpUrl = `https://i0.wp.com/bibica.net/wp-content/uploads${url.pathname}${url.search}`;
 
       const imageResponse = await fetch(wpUrl, {
         headers: { 'Accept': request.headers.get('Accept') || '*/*' }
