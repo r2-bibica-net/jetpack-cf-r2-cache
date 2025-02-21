@@ -11,7 +11,7 @@ export default {
 
     if (response) {
       // Cache hit
-      return new Response(response.body, response);
+      return response;
     }
 
     // Cache miss - Xử lý request
@@ -41,10 +41,15 @@ export default {
       }
     });
 
+    // Chỉ cache phản hồi hợp lệ (status 200)
+    if (!sourceResponse.ok) {
+      return sourceResponse;
+    }
+
     // Tạo response cacheable
     response = new Response(sourceResponse.body, {
       headers: {
-        'content-type': 'image/webp',
+        'content-type': sourceResponse.headers.get('content-type') || 'image/webp',
         'Cache-Control': 'public, s-maxage=31536000',
         'X-Cache': sourceResponse.headers.get('x-nc'),
         'X-Served-By': `Cloudflare Pages & ${source}`
