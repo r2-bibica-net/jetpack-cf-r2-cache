@@ -20,6 +20,15 @@ export default {
       source = 'Jetpack';
     }
 
-    return fetch(targetUrl);
+    const response = await fetch(targetUrl);
+    
+    // Override Vary header để tránh tạo nhiều cache variants
+    const headers = new Headers(response.headers);
+    headers.set('Vary', '');
+    headers.set('Cache-Control', 'public, max-age=31536000');
+    
+    return new Response(response.body, {
+      headers: headers
+    });
   }
 };
