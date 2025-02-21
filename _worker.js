@@ -11,7 +11,7 @@ export default {
 
     // Cache key chỉ dựa trên URL
     const cache = caches.default;
-    const cacheKey = new Request(request.url); // Chỉ dùng URL làm cache key
+    const cacheKey = new Request(request.url, { method: 'GET' });
     let response = await cache.match(cacheKey);
 
     if (response) {
