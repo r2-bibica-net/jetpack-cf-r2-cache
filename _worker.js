@@ -6,7 +6,7 @@ export default {
     // Kiểm tra cache
     let response = await cache.match(cacheKey);
     if (response) {
-      return response;
+      return new Response(response.body, response);
     }
 
     // Xác định nguồn ảnh
@@ -46,9 +46,10 @@ export default {
     response = new Response(sourceResponse.body, {
       headers: {
         'Content-Type': sourceResponse.headers.get('Content-Type') || 'image/webp',
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'public, s-maxage=31536000, max-age=31536000, immutable',
         'Vary': 'Accept-Encoding',
-        'X-Served-By': `Cloudflare Pages & ${source}`
+        'X-Cache': 'HIT from Worker',
+        'X-Served-By': `Cloudflare & ${source}`
       }
     });
 
