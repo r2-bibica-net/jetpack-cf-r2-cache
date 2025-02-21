@@ -1,23 +1,47 @@
 export default {
   async fetch(request) {
     const url = new URL(request.url);
+    
     if (url.hostname !== 'i.bibica.net') {
-      return new Response('Not found', { status: 404 });
-    }
-    
-    const headers = {
-      'Accept': 'image/webp,*/*'
-    };
-    
-    let targetUrl;
-    if (url.pathname.startsWith('/avatar')) {
-      targetUrl = `https://secure.gravatar.com/avatar${url.pathname.slice(7)}`;
-    } else if (url.pathname.startsWith('/comment')) {
-      targetUrl = `https://i0.wp.com/comment.bibica.net/static/images${url.pathname.slice(8)}`;
-    } else {
-      targetUrl = `https://i0.wp.com/bibica.net/wp-content/uploads${url.pathname}${url.search}`;
+      return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { 
+        status: 404 
+      });
     }
 
-    return fetch(targetUrl, { headers });
+    // Bước 1: Set Accept header ngay từ đầu để Jetpack biết client support WebP
+    const normalizedHeaders = {
+      'Accept': 'image/webp,*/*'
+    };
+
+    let targetUrl = new URL(request.url);
+    let source = '';
+
+    if (url.pathname.startsWith('/avatar')) {
+      targetUrl.hostname = 'secure.gravatar.com';
+      targetUrl.pathname = '/avatar' + url.pathname.replace('/avatar', '');
+      source = 'Gravatar';
+    } else if (url.pathname.startsWith('/comment')) {
+      targetUrl.hostname = 'i0.wp.com';
+      targetUrl.pathname = '/comment.bibica.net/static/images' + url.pathname.replace('/comment', '');
+      source = 'Artalk & Jetpack';
+    } else {
+      targetUrl.hostname = 'i0.wp.com'; 
+      targetUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
+      targetUrl.search = url.search;
+      source = 'Jetpack';
+    }
+
+    const sourceResponse = await fetch(targetUrl, {
+      headers: normalizedHeaders
+    });
+
+    return new Response(sourceResponse.body, {
+      headers: {
+        'content-type': 'image/webp',
+        'Cache-Control': 'public, s-maxage=31536000',
+        'X-Cache': sourceResponse.headers.get('x-nc'),
+        'X-Served-By': `Cloudflare Pages & ${source}`
+      }
+    });
   }
 };
