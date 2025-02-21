@@ -1,28 +1,24 @@
 export default {
-  async fetch(request, env) {
-    // Parse request URL
+  async fetch(request) {
     const url = new URL(request.url);
     
-    // Only process requests to i.bibica.net
     if (url.hostname !== 'i.bibica.net') {
       return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { 
         status: 404 
       });
     }
 
-    // Check cache first
+    // Use URL string as cache key
     const cache = caches.default;
-    const cacheKey = new Request(request.url, request);
+    const cacheKey = url.toString();
     let response = await cache.match(cacheKey);
 
     if (response) {
-      // Add cache hit header
       response = new Response(response.body, response);
       response.headers.set('CF-Cache-Status', 'HIT');
       return response;
     }
 
-    // Cache miss - process the request
     const normalizedHeaders = {
       'Accept': 'image/webp,*/*'
     };
@@ -30,7 +26,6 @@ export default {
     let targetUrl = new URL(request.url);
     let source = '';
 
-    // Map URLs based on path
     if (url.pathname.startsWith('/avatar')) {
       targetUrl.hostname = 'secure.gravatar.com';
       targetUrl.pathname = '/avatar' + url.pathname.replace('/avatar', '');
@@ -42,16 +37,14 @@ export default {
     } else {
       targetUrl.hostname = 'i0.wp.com';
       targetUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-      targetUrl.search = url.search;
+      targetUrl.search = url.search; // Preserve query params like w=450
       source = 'Jetpack';
     }
 
-    // Fetch image from source
     const sourceResponse = await fetch(targetUrl, {
       headers: normalizedHeaders
     });
 
-    // Create cacheable response
     response = new Response(sourceResponse.body, {
       headers: {
         'content-type': 'image/webp',
@@ -62,7 +55,7 @@ export default {
       }
     });
 
-    // Store in cache
+    // Store in cache using URL string as key
     await cache.put(cacheKey, response.clone());
 
     return response;
