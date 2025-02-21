@@ -1,6 +1,6 @@
 export default {
   async fetch(request, env) {
-    // Tạo cache key chỉ dựa vào URL (bao gồm cả query string)
+    // Tạo cache key chỉ dựa vào URL (không xét headers để tránh cache bị chia nhỏ)
     const cacheKey = new Request(new URL(request.url).toString(), {
       method: 'GET',
     });
@@ -10,8 +10,7 @@ export default {
     let response = await cache.match(cacheKey);
 
     if (response) {
-      // Cache hit
-      return response;
+      return new Response(response.body, response);
     }
 
     // Cache miss - Xử lý request
@@ -50,9 +49,10 @@ export default {
     response = new Response(sourceResponse.body, {
       headers: {
         'content-type': sourceResponse.headers.get('content-type') || 'image/webp',
-        'Cache-Control': 'public, s-maxage=31536000',
-        'X-Cache': sourceResponse.headers.get('x-nc'),
-        'X-Served-By': `Cloudflare Pages & ${source}`
+        'Cache-Control': 'public, s-maxage=31536000, max-age=31536000, immutable',
+        'X-Cache': sourceResponse.headers.get('x-nc') || 'MISS',
+        'X-Served-By': `Cloudflare Pages & ${source}`,
+        'CF-Cache-Status': 'MISS'
       }
     });
 
