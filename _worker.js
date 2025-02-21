@@ -1,19 +1,17 @@
 export default {
   async fetch(request, env) {
-    // Tạo cache key dựa trên URL (không xét headers)
+    const cache = caches.default;
     const cacheKey = new Request(new URL(request.url).toString(), { method: 'GET' });
 
-    // Truy vấn cache Cloudflare
-    const cache = caches.default;
+    // Kiểm tra cache
     let response = await cache.match(cacheKey);
-
     if (response) {
-      return new Response(response.body, response);
+      return response;
     }
 
-    // Xác định nguồn dữ liệu
+    // Xác định nguồn ảnh
     const url = new URL(request.url);
-    let targetUrl = url;
+    let targetUrl = new URL(request.url);
     let source = '';
 
     if (url.pathname.startsWith('/avatar')) {
@@ -31,25 +29,30 @@ export default {
       source = 'Jetpack';
     }
 
-    // Fetch dữ liệu từ nguồn
+    // Fetch từ nguồn
     const sourceResponse = await fetch(targetUrl, {
       headers: { 'Accept': 'image/webp,*/*' }
     });
 
-    // Nếu phản hồi không hợp lệ, trả về ngay
+    // Nếu response lỗi, trả về luôn
     if (!sourceResponse.ok) {
-      return sourceResponse;
+      return new Response(`Error fetching from ${source}`, {
+        status: sourceResponse.status,
+        headers: { 'Content-Type': 'text/plain' }
+      });
     }
 
-    // Sao chép headers gốc, đảm bảo có Content-Type
-    let headers = new Headers(sourceResponse.headers);
-    headers.set('Cache-Control', 'public, s-maxage=31536000, max-age=31536000, immutable');
-    headers.set('Vary', 'Accept-Encoding');
-    headers.set('X-Served-By', `Cloudflare Pages & ${source}`);
+    // Tạo response với headers cần thiết
+    response = new Response(sourceResponse.body, {
+      headers: {
+        'Content-Type': sourceResponse.headers.get('Content-Type') || 'image/webp',
+        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Vary': 'Accept-Encoding',
+        'X-Served-By': `Cloudflare Pages & ${source}`
+      }
+    });
 
-    response = new Response(sourceResponse.body, { headers });
-
-    // Lưu cache
+    // Lưu vào cache
     await cache.put(cacheKey, response.clone());
 
     return response;
