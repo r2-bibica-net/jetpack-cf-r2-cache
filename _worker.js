@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env) {
     const cache = caches.default;
-    const cacheKey = new Request(new URL(request.url).toString(), { method: 'GET' });
+    const cacheKey = new Request(request.url, { method: 'GET' });
 
     // Kiểm tra cache
     let response = await cache.match(cacheKey);
@@ -11,9 +11,9 @@ export default {
       return response;
     }
 
-    // Cache MISS - Fetch dữ liệu từ nguồn
+    // Cache MISS - Fetch từ nguồn
     const url = new URL(request.url);
-    let targetUrl = new URL(request.url);
+    let targetUrl = url;
     let source = '';
 
     if (url.pathname.startsWith('/avatar')) {
@@ -35,22 +35,22 @@ export default {
       headers: { 'Accept': 'image/webp,*/*' }
     });
 
-    if (!sourceResponse.ok) {
+    if (!sourceResponse.ok || sourceResponse.headers.get('Cache-Control')?.includes('no-store')) {
       return sourceResponse;
     }
 
-    // Tạo response mới với headers chuẩn để Cloudflare cache
+    // Tạo response mới để lưu vào cache
     response = new Response(sourceResponse.body, {
       headers: {
         'Content-Type': sourceResponse.headers.get('Content-Type') || 'image/webp',
-        'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+        'Cache-Control': 'public, s-maxage=31536000, max-age=31536000, immutable',
         'Vary': 'Accept-Encoding',
         'X-Cache': 'MISS from Worker',
-        'X-Served-By': `Cloudflare & ${source}`
+        'X-Served-By': `Cloudflare Pages & ${source}`
       }
     });
 
-    // Lưu vào cache
+    // Lưu cache
     await cache.put(cacheKey, response.clone());
 
     return response;
