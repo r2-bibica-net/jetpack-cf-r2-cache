@@ -3,40 +3,23 @@ export default {
     const url = new URL(request.url);
     
     if (url.hostname !== 'i.bibica.net') {
-      return new Response(`Request not supported`, { status: 404 });
+      return new Response('Not found', { status: 404 });
     }
 
-    let targetUrl = new URL(request.url);
-    let source = '';
+    let targetUrl;
+    let source;
 
-    // Xử lý routing
     if (url.pathname.startsWith('/avatar')) {
-      targetUrl.hostname = 'secure.gravatar.com';
-      targetUrl.pathname = '/avatar' + url.pathname.replace('/avatar', '');
+      targetUrl = `https://secure.gravatar.com/avatar${url.pathname.slice(7)}`;
       source = 'Gravatar';
     } else if (url.pathname.startsWith('/comment')) {
-      targetUrl.hostname = 'i0.wp.com';
-      targetUrl.pathname = '/comment.bibica.net/static/images' + url.pathname.replace('/comment', '');
+      targetUrl = `https://i0.wp.com/comment.bibica.net/static/images${url.pathname.slice(8)}`;
       source = 'Artalk & Jetpack';
     } else {
-      targetUrl.hostname = 'i0.wp.com'; 
-      targetUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-      targetUrl.search = url.search;
+      targetUrl = `https://i0.wp.com/bibica.net/wp-content/uploads${url.pathname}${url.search}`;
       source = 'Jetpack';
     }
 
-    try {
-      const sourceResponse = await fetch(targetUrl.toString());
-
-      return new Response(sourceResponse.body, {
-        headers: {
-          'Content-Type': 'image/webp',
-          'Cache-Control': 'public, max-age=31536000',
-          'X-Served-By': `Cloudflare Pages & ${source}`
-        }
-      });
-    } catch (error) {
-      return new Response('Error fetching image', { status: 500 });
-    }
+    return fetch(targetUrl);
   }
 };
