@@ -39,16 +39,15 @@ export default {
       return sourceResponse;
     }
 
+    // Sao chép toàn bộ headers từ response gốc
+    const newHeaders = new Headers(sourceResponse.headers);
+    newHeaders.set('Cache-Control', 'public, s-maxage=31536000, max-age=31536000, immutable');
+    newHeaders.set('Vary', 'Accept-Encoding');
+    newHeaders.set('X-Cache', 'MISS from Worker');
+    newHeaders.set('X-Served-By', `Cloudflare Pages & ${source}`);
+
     // Tạo response mới để lưu vào cache
-    response = new Response(sourceResponse.body, {
-      headers: {
-        'Content-Type': sourceResponse.headers.get('Content-Type') || 'image/webp',
-        'Cache-Control': 'public, s-maxage=31536000, max-age=31536000, immutable',
-        'Vary': 'Accept-Encoding',
-        'X-Cache': 'MISS from Worker',
-        'X-Served-By': `Cloudflare Pages & ${source}`
-      }
-    });
+    response = new Response(sourceResponse.body, { headers: newHeaders });
 
     // Lưu cache
     await cache.put(cacheKey, response.clone());
