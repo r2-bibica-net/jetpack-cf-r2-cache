@@ -1,16 +1,17 @@
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url);
-    
+
+    // Chỉ xử lý domain i.bibica.net
     if (url.hostname !== 'i.bibica.net') {
       return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { 
         status: 404 
       });
     }
 
-    // Use URL string as cache key
+    // Cache key chỉ dựa trên URL
     const cache = caches.default;
-    const cacheKey = url.toString();
+    const cacheKey = new Request(request.url); // Chỉ dùng URL làm cache key
     let response = await cache.match(cacheKey);
 
     if (response) {
@@ -19,10 +20,8 @@ export default {
       return response;
     }
 
-    const normalizedHeaders = {
-      'Accept': 'image/webp,*/*'
-    };
-
+    // Nếu cache miss, fetch dữ liệu từ nguồn
+    const normalizedHeaders = { 'Accept': 'image/webp,*/*' };
     let targetUrl = new URL(request.url);
     let source = '';
 
@@ -37,14 +36,13 @@ export default {
     } else {
       targetUrl.hostname = 'i0.wp.com';
       targetUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-      targetUrl.search = url.search; // Preserve query params like w=450
+      targetUrl.search = url.search;
       source = 'Jetpack';
     }
 
-    const sourceResponse = await fetch(targetUrl, {
-      headers: normalizedHeaders
-    });
+    const sourceResponse = await fetch(targetUrl, { headers: normalizedHeaders });
 
+    // Tạo response cacheable
     response = new Response(sourceResponse.body, {
       headers: {
         'content-type': 'image/webp',
@@ -55,7 +53,7 @@ export default {
       }
     });
 
-    // Store in cache using URL string as key
+    // Lưu vào cache
     await cache.put(cacheKey, response.clone());
 
     return response;
