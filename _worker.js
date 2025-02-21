@@ -11,9 +11,7 @@ export default {
 
     if (response) {
       // Cache hit
-      response = new Response(response.body, response);
-      response.headers.set('CF-Cache-Status', 'HIT');
-      return response;
+      return new Response(response.body, response);
     }
 
     // Cache miss - Xử lý request
@@ -49,8 +47,7 @@ export default {
         'content-type': 'image/webp',
         'Cache-Control': 'public, s-maxage=31536000',
         'X-Cache': sourceResponse.headers.get('x-nc'),
-        'X-Served-By': `Cloudflare Pages & ${source}`,
-        'CF-Cache-Status': 'MISS'
+        'X-Served-By': `Cloudflare Pages & ${source}`
       }
     });
 
