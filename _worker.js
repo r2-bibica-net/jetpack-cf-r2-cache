@@ -20,7 +20,7 @@ export default {
         return new Response(gravatarResponse.body, {
           headers: {
             'content-type': 'image/webp',
-            'Cache-Control': 'public, s-maxage=86400',
+            'Cache-Control': 'public, s-maxage=31536000',
             'X-Cache': gravatarResponse.headers.get('x-nc'),
             'X-Served-By': 'Cloudflare Pages & Gravatar'
           }
@@ -38,7 +38,7 @@ export default {
         return new Response(commentResponse.body, {
           headers: {
             'content-type': 'image/webp',
-            'Cache-Control': 'public, s-maxage=86400',
+            'Cache-Control': 'public, s-maxage=31536000',
             'X-Cache': commentResponse.headers.get('x-nc'),
             'X-Served-By': 'Cloudflare Pages & Artalk & Jetpack'
           }
@@ -57,7 +57,7 @@ export default {
         return new Response(imageResponse.body, {
           headers: {
             'content-type': 'image/webp',
-            'Cache-Control': 'public, s-maxage=86400',
+            'Cache-Control': 'public, s-maxage=31536000',
             'X-Cache': imageResponse.headers.get('x-nc'),
             'X-Served-By': 'Cloudflare Pages & Jetpack'
           }
