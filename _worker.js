@@ -1,17 +1,22 @@
 export default {
   async fetch(request, env) {
-    const cache = caches.default;
-    const cacheKey = new Request(request.url, request);
+    // Tạo cache key chỉ dựa vào URL (bao gồm cả query string)
+    const cacheKey = new Request(new URL(request.url).toString(), {
+      method: 'GET',
+    });
 
-    // Kiểm tra cache
+    // Truy vấn cache
+    const cache = caches.default;
     let response = await cache.match(cacheKey);
+
     if (response) {
+      // Cache hit
       response = new Response(response.body, response);
-      response.headers.set('X-Cache', 'HIT from Worker');
+      response.headers.set('CF-Cache-Status', 'HIT');
       return response;
     }
 
-    // Cache MISS - Fetch từ nguồn
+    // Cache miss - Xử lý request
     const url = new URL(request.url);
     let targetUrl = url;
     let source = '';
@@ -31,28 +36,26 @@ export default {
       source = 'Jetpack';
     }
 
+    // Fetch dữ liệu từ nguồn
     const sourceResponse = await fetch(targetUrl, {
-      headers: { 'Accept': 'image/webp,*/*' }
+      headers: {
+        'Accept': 'image/webp,*/*'
+      }
     });
 
-    if (!sourceResponse.ok || sourceResponse.headers.get('Cache-Control')?.includes('no-store')) {
-      return sourceResponse;
-    }
+    // Tạo response cacheable
+    response = new Response(sourceResponse.body, {
+      headers: {
+        'content-type': 'image/webp',
+        'Cache-Control': 'public, s-maxage=31536000',
+        'X-Cache': sourceResponse.headers.get('x-nc'),
+        'X-Served-By': Cloudflare Pages & ${source},
+        'CF-Cache-Status': 'MISS'
+      }
+    });
 
-    // Sao chép toàn bộ headers từ response gốc
-    const newHeaders = new Headers(sourceResponse.headers);
-    newHeaders.set('Cache-Control', 'public, s-maxage=31536000, max-age=31536000, immutable');
-    newHeaders.set('Vary', 'Accept-Encoding');
-    newHeaders.set('X-Cache', 'MISS from Worker');
-    newHeaders.set('X-Served-By', `Cloudflare Pages & ${source}`);
-
-    // Tạo response mới để lưu vào cache
-    response = new Response(sourceResponse.body, { headers: newHeaders });
-
-    // Lưu cache chỉ khi response hợp lệ
-    if (sourceResponse.ok) {
-      await cache.put(cacheKey, response.clone());
-    }
+    // Lưu cache với cacheKey chỉ dựa vào URL
+    await cache.put(cacheKey, response.clone());
 
     return response;
   }
