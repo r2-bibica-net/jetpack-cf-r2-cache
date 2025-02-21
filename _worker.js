@@ -1,62 +1,63 @@
 export default {
-  async fetch(request, env) {
-    // Tạo cache key chỉ dựa vào URL (bao gồm cả query string)
-    const cacheKey = new Request(new URL(request.url).toString(), {
-      method: 'GET',
-    });
-
-    // Truy vấn cache
-    const cache = caches.default;
-    let response = await cache.match(cacheKey);
-
-    if (response) {
-      // Cache hit
-      response = new Response(response.body, response);
-      response.headers.set('CF-Cache-Status', 'HIT');
-      return response;
-    }
-
-    // Cache miss - Xử lý request
+  async fetch(request) {
     const url = new URL(request.url);
-    let targetUrl = url;
-    let source = '';
 
-    if (url.pathname.startsWith('/avatar')) {
-      targetUrl.hostname = 'secure.gravatar.com';
-      targetUrl.pathname = '/avatar' + url.pathname.replace('/avatar', '');
-      source = 'Gravatar';
-    } else if (url.pathname.startsWith('/comment')) {
-      targetUrl.hostname = 'i0.wp.com';
-      targetUrl.pathname = '/comment.bibica.net/static/images' + url.pathname.replace('/comment', '');
-      source = 'Artalk & Jetpack';
-    } else {
-      targetUrl.hostname = 'i0.wp.com';
-      targetUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-      targetUrl.search = url.search;
-      source = 'Jetpack';
+    if (url.hostname === 'i.bibica.net') {
+      // Chỉ giữ lại những headers thực sự cần thiết
+      const normalizedHeaders = {
+        'Accept': 'image/webp,/'
+      };
+      if (url.pathname.startsWith('/avatar')) {
+        const gravatarUrl = new URL(request.url);
+        gravatarUrl.hostname = 'secure.gravatar.com';
+        gravatarUrl.pathname = '/avatar' + url.pathname.replace('/avatar', '');
+
+        const gravatarResponse = await fetch(gravatarUrl, {
+          headers: normalizedHeaders
+        });
+        return new Response(gravatarResponse.body, {
+          headers: {
+            'content-type': 'image/webp',
+            'Cache-Control': 'public, s-maxage=31536000',
+            'X-Cache': gravatarResponse.headers.get('x-nc'),
+            'X-Served-By': 'Cloudflare Pages & Gravatar'
+          }
+        });
+      } else if (url.pathname.startsWith('/comment')) {
+        const commentUrl = new URL(request.url);
+        commentUrl.hostname = 'i0.wp.com';
+        commentUrl.pathname = '/comment.bibica.net/static/images' + url.pathname.replace('/comment', '');
+
+        const commentResponse = await fetch(commentUrl, {
+          headers: normalizedHeaders
+        });
+        return new Response(commentResponse.body, {
+          headers: {
+            'content-type': 'image/webp',
+            'Cache-Control': 'public, s-maxage=31536000',
+            'X-Cache': commentResponse.headers.get('x-nc'),
+            'X-Served-By': 'Cloudflare Pages & Artalk & Jetpack'
+          }
+        });
+      } else {
+        const wpUrl = new URL(request.url);
+        wpUrl.hostname = 'i0.wp.com';
+        wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
+        wpUrl.search = url.search;
+
+        const imageResponse = await fetch(wpUrl, {
+          headers: normalizedHeaders
+        });
+        return new Response(imageResponse.body, {
+          headers: {
+            'content-type': 'image/webp',
+            'Cache-Control': 'public, s-maxage=31536000',
+            'X-Cache': imageResponse.headers.get('x-nc'),
+            'X-Served-By': 'Cloudflare Pages & Jetpack'
+          }
+        });
+      }
     }
-
-    // Fetch dữ liệu từ nguồn
-    const sourceResponse = await fetch(targetUrl, {
-      headers: {
-        'Accept': 'image/webp,*/*'
-      }
-    });
-
-    // Tạo response cacheable
-    response = new Response(sourceResponse.body, {
-      headers: {
-        'content-type': 'image/webp',
-        'Cache-Control': 'public, s-maxage=31536000',
-        'X-Cache': sourceResponse.headers.get('x-nc'),
-        'X-Served-By': Cloudflare Pages & ${source},
-        'CF-Cache-Status': 'MISS'
-      }
-    });
-
-    // Lưu cache với cacheKey chỉ dựa vào URL
-    await cache.put(cacheKey, response.clone());
-
-    return response;
+    return new Response(Request not supported: ${url.hostname} does not match any rules., { status: 404 });
   }
 };
