@@ -1,7 +1,7 @@
 export default {
   async fetch(request, env) {
     const cache = caches.default;
-    const cacheKey = new Request(request.url, { method: 'GET' });
+    const cacheKey = new Request(request.url, request);
 
     // Kiểm tra cache
     let response = await cache.match(cacheKey);
@@ -49,8 +49,10 @@ export default {
     // Tạo response mới để lưu vào cache
     response = new Response(sourceResponse.body, { headers: newHeaders });
 
-    // Lưu cache
-    await cache.put(cacheKey, response.clone());
+    // Lưu cache chỉ khi response hợp lệ
+    if (sourceResponse.ok) {
+      await cache.put(cacheKey, response.clone());
+    }
 
     return response;
   }
