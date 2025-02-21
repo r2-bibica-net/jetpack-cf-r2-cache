@@ -1,28 +1,24 @@
 export default {
   async fetch(request, env) {
-    const url = new URL(request.url);
+    // Tạo cache key chỉ dựa vào URL (bao gồm cả query string)
+    const cacheKey = new Request(new URL(request.url).toString(), {
+      method: 'GET',
+    });
 
-    // Chỉ xử lý domain i.bibica.net
-    if (url.hostname !== 'i.bibica.net') {
-      return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { 
-        status: 404 
-      });
-    }
-
-    // Cache key chỉ dựa trên URL
+    // Truy vấn cache
     const cache = caches.default;
-    const cacheKey = new Request(request.url, { method: 'GET' });
     let response = await cache.match(cacheKey);
 
     if (response) {
+      // Cache hit
       response = new Response(response.body, response);
       response.headers.set('CF-Cache-Status', 'HIT');
       return response;
     }
 
-    // Nếu cache miss, fetch dữ liệu từ nguồn
-    const normalizedHeaders = { 'Accept': 'image/webp,*/*' };
-    let targetUrl = new URL(request.url);
+    // Cache miss - Xử lý request
+    const url = new URL(request.url);
+    let targetUrl = url;
     let source = '';
 
     if (url.pathname.startsWith('/avatar')) {
@@ -40,7 +36,12 @@ export default {
       source = 'Jetpack';
     }
 
-    const sourceResponse = await fetch(targetUrl, { headers: normalizedHeaders });
+    // Fetch dữ liệu từ nguồn
+    const sourceResponse = await fetch(targetUrl, {
+      headers: {
+        'Accept': 'image/webp,*/*'
+      }
+    });
 
     // Tạo response cacheable
     response = new Response(sourceResponse.body, {
@@ -53,7 +54,7 @@ export default {
       }
     });
 
-    // Lưu vào cache
+    // Lưu cache với cacheKey chỉ dựa vào URL
     await cache.put(cacheKey, response.clone());
 
     return response;
