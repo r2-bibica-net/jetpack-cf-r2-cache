@@ -6,10 +6,12 @@ export default {
     // Kiểm tra cache
     let response = await cache.match(cacheKey);
     if (response) {
-      return new Response(response.body, response);
+      response = new Response(response.body, response);
+      response.headers.set('X-Cache', 'HIT from Worker');
+      return response;
     }
 
-    // Xác định nguồn ảnh
+    // Cache MISS - Fetch dữ liệu từ nguồn
     const url = new URL(request.url);
     let targetUrl = new URL(request.url);
     let source = '';
@@ -29,26 +31,21 @@ export default {
       source = 'Jetpack';
     }
 
-    // Fetch từ nguồn
     const sourceResponse = await fetch(targetUrl, {
       headers: { 'Accept': 'image/webp,*/*' }
     });
 
-    // Nếu response lỗi, trả về luôn
     if (!sourceResponse.ok) {
-      return new Response(`Error fetching from ${source}`, {
-        status: sourceResponse.status,
-        headers: { 'Content-Type': 'text/plain' }
-      });
+      return sourceResponse;
     }
 
-    // Tạo response với headers cần thiết
+    // Tạo response mới với headers chuẩn để Cloudflare cache
     response = new Response(sourceResponse.body, {
       headers: {
         'Content-Type': sourceResponse.headers.get('Content-Type') || 'image/webp',
-        'Cache-Control': 'public, s-maxage=31536000, max-age=31536000, immutable',
+        'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
         'Vary': 'Accept-Encoding',
-        'X-Cache': 'HIT from Worker',
+        'X-Cache': 'MISS from Worker',
         'X-Served-By': `Cloudflare & ${source}`
       }
     });
