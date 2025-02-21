@@ -9,6 +9,8 @@ export default {
         console.log(`${key}: ${value}`);
         originalHeaders[key] = value;
       }
+      console.log('Request URL:', request.url);
+      console.log('Original Headers:', originalHeaders);
       };
 
       if (url.pathname.startsWith('/avatar')) {
