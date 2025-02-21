@@ -16,6 +16,12 @@ export default {
       targetUrl = `https://i0.wp.com/bibica.net/wp-content/uploads${url.pathname}${url.search}`;
     }
 
-    return fetch(targetUrl);
+    const response = await fetch(targetUrl);
+
+    return new Response(response.body, {
+      headers: {
+        'content-type': 'image/webp'
+      }
+    });
   }
 };
