@@ -40,14 +40,19 @@ export default {
       headers: { 'Accept': request.headers.get('Accept') || '*/*' }
     });
 
-    // Trả về response với headers tùy chỉnh
-    return new Response(response.body, {
-      headers: {
-        'content-type': 'image/webp',
-        'link': response.headers.get('link'),
-        'X-Cache': response.headers.get('x-nc'),
-        'X-Served-By': `Cloudflare Pages & ${config.service}`
-      }
-    });
+    // Lấy headers từ response gốc
+    const headers = new Headers(response.headers);
+    
+    // Xóa các headers không cần thiết
+    headers.delete('last-modified');
+    headers.delete('nel');
+
+    // Set các headers tùy chỉnh
+    headers.set('content-type', 'image/webp');
+    headers.set('X-Cache', response.headers.get('x-nc'));
+    headers.set('X-Served-By', `Cloudflare Pages & ${config.service}`);
+
+    // Trả về response với headers đã được chỉnh sửa
+    return new Response(response.body, { headers });
   }
 };
