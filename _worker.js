@@ -44,8 +44,10 @@ export default {
     return new Response(response.body, {
       headers: {
         'content-type': 'image/webp',
-        'last-modified': response.headers.get('last-modified'),        
-        'link': response.headers.get('link'),
+        'last-modified': response.headers.get('last-modified'),
+        'link': response.headers.get('link'),        
+        'etag': response.headers.get('etag'),
+        'cache-control': response.headers.get('cache-control'),        
         'X-Cache': response.headers.get('x-nc'),
         'X-Served-By': `Cloudflare Pages & ${config.service}`
       }
