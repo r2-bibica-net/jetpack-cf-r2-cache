@@ -8,7 +8,6 @@ export default {
       });
     }
 
-    // Bước 1: Set Accept header ngay từ đầu để Jetpack biết client support WebP
     const normalizedHeaders = {
       'Accept': 'image/webp,*/*'
     };
