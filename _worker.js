@@ -6,8 +6,10 @@ export default {
       return new Response('Not found', { status: 404 });
     }
 
+    // Chuẩn hóa cả Accept và Accept-Encoding
     const headers = {
-      'Accept': 'image/webp,*/*'
+      'Accept': 'image/webp,*/*',
+      'Accept-Encoding': 'gzip'
     };
 
     let targetUrl;
