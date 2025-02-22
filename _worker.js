@@ -6,13 +6,12 @@ export default {
       return new Response('Not found', { status: 404 });
     }
 
-    // Chuẩn hóa cả Accept và Accept-Encoding
     const headers = {
-      'Accept': 'image/webp,*/*',
-      'Accept-Encoding': 'gzip'
+      'Accept': 'image/webp,*/*'
     };
 
     let targetUrl;
+
     if (url.pathname.startsWith('/avatar')) {
       targetUrl = `https://secure.gravatar.com/avatar${url.pathname.slice(7)}`;
     } else if (url.pathname.startsWith('/comment')) {
