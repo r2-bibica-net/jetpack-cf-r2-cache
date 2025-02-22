@@ -44,11 +44,10 @@ export default {
     return new Response(response.body, {
       headers: {
         'content-type': 'image/webp',
+        'last-modified': response.headers.get('last-modified'),        
         'link': response.headers.get('link'),
         'X-Cache': response.headers.get('x-nc'),
-        'X-Served-By': `Cloudflare Pages & ${config.service}`,
-        'last-modified': '', // Xóa last-modified header
-        'nel': '' // Xóa nel header
+        'X-Served-By': `Cloudflare Pages & ${config.service}`
       }
     });
   }
