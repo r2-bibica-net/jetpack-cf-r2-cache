@@ -1,13 +1,7 @@
 export default {
   async fetch(request) {
     const url = new URL(request.url);
-    
-    // Chỉ xử lý cho i.bibica.net
-    if (url.hostname !== 'i.bibica.net') {
-      return new Response('Invalid hostname', { status: 404 });
-    }
 
-    // Định nghĩa rules cho việc chuyển hướng
     const rules = {
       '/avatar': {
         targetHost: 'secure.gravatar.com',
@@ -38,6 +32,7 @@ export default {
     const [_, config] = rule;
     targetUrl.hostname = config.targetHost;
     targetUrl.pathname = config.pathTransform(url.pathname);
+    targetUrl.search = url.search;
 
     // Thực hiện request
     const response = await fetch(targetUrl, {
