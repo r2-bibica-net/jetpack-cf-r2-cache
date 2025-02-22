@@ -1,67 +1,57 @@
 export default {
   async fetch(request) {
     const url = new URL(request.url);
-
-    if (url.hostname === 'i.bibica.net') {
-      if (url.pathname.startsWith('/avatar')) {
-        // Chuyển hướng i.bibica.net/comment/avatar sang https://secure.gravatar.com/avatar
-        const gravatarUrl = new URL(request.url);
-        gravatarUrl.hostname = 'secure.gravatar.com';
-        gravatarUrl.pathname = '/avatar' + url.pathname.replace('/avatar', '');
-
-        const gravatarResponse = await fetch(gravatarUrl, {
-          headers: { 'Accept': request.headers.get('Accept') || '*/*' }
-        });
-
-        return new Response(gravatarResponse.body, {
-          headers: {
-            'content-type': 'image/webp',
-            'link': gravatarResponse.headers.get('link'),
-            'X-Cache': gravatarResponse.headers.get('x-nc'),
-            'X-Served-By': 'Cloudflare Pages & Gravatar'
-          }
-        });
-      } else if (url.pathname.startsWith('/comment')) {
-        // Chuyển hướng i.bibica.net/comment sang https://i0.wp.com/comment.bibica.net/static/images
-        const commentUrl = new URL(request.url);
-        commentUrl.hostname = 'i0.wp.com';
-        commentUrl.pathname = '/comment.bibica.net/static/images' + url.pathname.replace('/comment', '');
-
-        const commentResponse = await fetch(commentUrl, {
-          headers: { 'Accept': request.headers.get('Accept') || '*/*' }
-        });
-
-        return new Response(commentResponse.body, {
-          headers: {
-            'content-type': 'image/webp',
-            'link': commentResponse.headers.get('link'),
-            'X-Cache': commentResponse.headers.get('x-nc'),
-            'X-Served-By': 'Cloudflare Pages & Artalk & Jetpack'
-          }
-        });
-      } else {
-        // Chuyển hướng mặc định cho i.bibica.net
-        const wpUrl = new URL(request.url);
-        wpUrl.hostname = 'i0.wp.com';
-        wpUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-        wpUrl.search = url.search;
-
-        const imageResponse = await fetch(wpUrl, {
-          headers: { 'Accept': request.headers.get('Accept') || '*/*' }
-        });
-
-        return new Response(imageResponse.body, {
-          headers: {
-            'content-type': 'image/webp',
-            'link': imageResponse.headers.get('link'),
-            'X-Cache': imageResponse.headers.get('x-nc'),
-            'X-Served-By': 'Cloudflare Pages & Jetpack'
-          }
-        });
-      }
+    
+    // Chỉ xử lý cho i.bibica.net
+    if (url.hostname !== 'i.bibica.net') {
+      return new Response('Invalid hostname', { status: 404 });
     }
 
-    // Trả về lỗi 404 nếu không khớp với bất kỳ quy tắc nào
-    return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { status: 404 });
+    // Định nghĩa rules cho việc chuyển hướng
+    const rules = {
+      '/avatar': {
+        targetHost: 'secure.gravatar.com',
+        pathTransform: (path) => '/avatar' + path.replace('/avatar', ''),
+        service: 'Gravatar'
+      },
+      '/comment': {
+        targetHost: 'i0.wp.com',
+        pathTransform: (path) => '/comment.bibica.net/static/images' + path.replace('/comment', ''),
+        service: 'Artalk & Jetpack'
+      },
+      '/': {
+        targetHost: 'i0.wp.com',
+        pathTransform: (path) => '/bibica.net/wp-content/uploads' + path,
+        service: 'Jetpack'
+      }
+    };
+
+    // Tìm rule phù hợp
+    const rule = Object.entries(rules).find(([prefix]) => url.pathname.startsWith(prefix));
+    
+    if (!rule) {
+      return new Response(`Path not supported: ${url.pathname}`, { status: 404 });
+    }
+
+    // Tạo URL mới theo rule
+    const targetUrl = new URL(request.url);
+    const [_, config] = rule;
+    targetUrl.hostname = config.targetHost;
+    targetUrl.pathname = config.pathTransform(url.pathname);
+
+    // Thực hiện request
+    const response = await fetch(targetUrl, {
+      headers: { 'Accept': request.headers.get('Accept') || '*/*' }
+    });
+
+    // Trả về response với headers tùy chỉnh
+    return new Response(response.body, {
+      headers: {
+        'content-type': 'image/webp',
+        'link': response.headers.get('link'),
+        'X-Cache': response.headers.get('x-nc'),
+        'X-Served-By': `Cloudflare Pages & ${config.service}`
+      }
+    });
   }
 };
