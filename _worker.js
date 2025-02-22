@@ -3,44 +3,22 @@ export default {
     const url = new URL(request.url);
     
     if (url.hostname !== 'i.bibica.net') {
-      return new Response(`Request not supported: ${url.hostname} does not match any rules.`, { 
-        status: 404 
-      });
+      return new Response('Not found', { status: 404 });
     }
 
-    const normalizedHeaders = {
+    const headers = {
       'Accept': 'image/webp,*/*'
     };
 
-    let targetUrl = new URL(request.url);
-    let source = '';
-
+    let targetUrl;
     if (url.pathname.startsWith('/avatar')) {
-      targetUrl.hostname = 'secure.gravatar.com';
-      targetUrl.pathname = '/avatar' + url.pathname.replace('/avatar', '');
-      source = 'Gravatar';
+      targetUrl = `https://secure.gravatar.com/avatar${url.pathname.slice(7)}`;
     } else if (url.pathname.startsWith('/comment')) {
-      targetUrl.hostname = 'i0.wp.com';
-      targetUrl.pathname = '/comment.bibica.net/static/images' + url.pathname.replace('/comment', '');
-      source = 'Artalk & Jetpack';
+      targetUrl = `https://i0.wp.com/comment.bibica.net/static/images${url.pathname.slice(8)}`;
     } else {
-      targetUrl.hostname = 'i0.wp.com'; 
-      targetUrl.pathname = '/bibica.net/wp-content/uploads' + url.pathname;
-      targetUrl.search = url.search;
-      source = 'Jetpack';
+      targetUrl = `https://i0.wp.com/bibica.net/wp-content/uploads${url.pathname}${url.search}`;
     }
 
-    const sourceResponse = await fetch(targetUrl, {
-      headers: normalizedHeaders
-    });
-
-    return new Response(sourceResponse.body, {
-      headers: {
-        'content-type': 'image/webp',
-        'Cache-Control': 'public, s-maxage=31536000',
-        'X-Cache': sourceResponse.headers.get('x-nc'),
-        'X-Served-By': `Cloudflare Pages & ${source}`
-      }
-    });
+    return fetch(targetUrl, { headers });
   }
 };
