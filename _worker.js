@@ -24,6 +24,7 @@ export function onRequest(context) {
   const targetUrl = new URL(context.request.url);
   targetUrl.hostname = route.target;
   targetUrl.pathname = route.transform(path);
+  targetUrl.search = url.search;
 
   return fetch(targetUrl, {
     headers: { Accept: context.request.headers.get('Accept') || '*/*' }
