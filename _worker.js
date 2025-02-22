@@ -46,7 +46,9 @@ export default {
         'content-type': 'image/webp',
         'link': response.headers.get('link'),
         'X-Cache': response.headers.get('x-nc'),
-        'X-Served-By': `Cloudflare Pages & ${config.service}`
+        'X-Served-By': `Cloudflare Pages & ${config.service}`,
+        'last-modified': '', // Xóa last-modified header
+        'nel': '' // Xóa nel header
       }
     });
   }
