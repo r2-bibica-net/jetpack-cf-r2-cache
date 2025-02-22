@@ -1,9 +1,6 @@
 export default {
   async fetch(request) {
     const url = new URL(request.url);
-    const headers = {
-      'Accept': 'image/webp,*/*'
-    };
     
     let targetUrl;
     if (url.pathname.startsWith('/avatar')) {
@@ -14,6 +11,6 @@ export default {
       targetUrl = `https://i0.wp.com/bibica.net/wp-content/uploads${url.pathname}${url.search}`;
     }
     
-    return fetch(targetUrl, { headers });
+    return fetch(targetUrl);
   }
 };
