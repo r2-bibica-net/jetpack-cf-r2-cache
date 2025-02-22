@@ -1,7 +1,10 @@
 export default {
   async fetch(request) {
     const url = new URL(request.url);
-
+    const headers = {
+      'Accept': 'image/webp,*/*'
+    };
+    
     let targetUrl;
     if (url.pathname.startsWith('/avatar')) {
       targetUrl = `https://secure.gravatar.com/avatar${url.pathname.slice(7)}`;
