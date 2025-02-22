@@ -1,16 +1,17 @@
 export default {
   async fetch(request) {
     const url = new URL(request.url);
-
+    
+    // Định nghĩa rules cho việc chuyển hướng
     const rules = {
       '/avatar': {
         targetHost: 'secure.gravatar.com',
-        pathTransform: (path) => '/avatar' + path.replace('/avatar', ''),
+        pathTransform: (path, prefix) => '/avatar' + path.replace(prefix, ''),
         service: 'Gravatar'
       },
       '/comment': {
         targetHost: 'i0.wp.com',
-        pathTransform: (path) => '/comment.bibica.net/static/images' + path.replace('/comment', ''),
+        pathTransform: (path, prefix) => '/comment.bibica.net/static/images' + path.replace(prefix, ''),
         service: 'Artalk & Jetpack'
       },
       '/': {
@@ -29,9 +30,9 @@ export default {
 
     // Tạo URL mới theo rule
     const targetUrl = new URL(request.url);
-    const [_, config] = rule;
+    const [prefix, config] = rule;
     targetUrl.hostname = config.targetHost;
-    targetUrl.pathname = config.pathTransform(url.pathname);
+    targetUrl.pathname = config.pathTransform(url.pathname, prefix);
     targetUrl.search = url.search;
 
     // Thực hiện request
