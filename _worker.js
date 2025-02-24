@@ -38,7 +38,8 @@ export default {
 
     return new Response(response.body, {
       headers: {
-        'content-type': 'image/webp',      
+        'content-type': 'image/webp',
+        'X-Content-Type-Options': 'nosniff',
         'link': response.headers.get('link'),
         'X-Cache': response.headers.get('x-nc'),
         'X-Served-By': `Cloudflare Pages & ${config.service}`
