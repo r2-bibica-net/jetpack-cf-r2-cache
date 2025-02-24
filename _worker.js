@@ -41,6 +41,7 @@ export default {
         'content-type': 'image/webp',
         'X-Content-Type-Options': 'nosniff',
         'link': response.headers.get('link'),
+        'last-modified': response.headers.get('last-modified'),
         'X-Cache': response.headers.get('x-nc'),
         'X-Served-By': `Cloudflare Pages & ${config.service}`
       }
